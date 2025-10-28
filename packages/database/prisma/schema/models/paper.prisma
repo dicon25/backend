@@ -1,0 +1,144 @@
+/// 논문 모델
+/// 학술 논문의 메타데이터와 AI 생성 콘텐츠를 저장
+/// 뉴스 피드 형식으로 사용자에게 제공되는 핵심 콘텐츠
+model Paper {
+  /// 논문 고유 ID (UUID)
+  id String @id @default(uuid())
+
+  /// 논문 제목
+  title String
+
+  /// 논문 원본 초록 (Abstract)
+  /// 학술 논문의 공식 요약문
+  abstract String
+
+  /// AI가 생성한 뉴스 형식 소개
+  /// 일반 사용자가 이해하기 쉽도록 변환된 내용
+  introduction String @default("")
+
+  /// 카테고리 배열
+  /// 예: ["Artificial Intelligence", "Natural Language Processing"]
+  /// 논문의 주요 학문 분야
+  categories String[]
+
+  /// 태그 배열
+  /// 예: ["machine-learning", "transformer", "nlp"]
+  /// 세부 주제 및 키워드
+  tags String[]
+
+  /// 저자 목록
+  /// 논문 작성자들의 이름 배열
+  authors String[]
+
+  /// 출판 연도
+  year Int
+
+  /// 저널/학회 이름
+  /// 예: "NeurIPS", "Nature", "Science"
+  journal String
+
+  /// 볼륨 번호 (선택 사항)
+  volume Int?
+
+  /// 이슈 번호 (선택 사항)
+  issue Int?
+
+  /// 페이지 범위 (선택 사항)
+  /// 예: "1234-1245"
+  pages String?
+
+  /// DOI (Digital Object Identifier)
+  /// 논문의 고유 식별자, 중복 불가
+  /// 예: "10.48550/arXiv.1706.03762"
+  doi String @unique
+
+  /// 논문 원본 URL (선택 사항)
+  /// arXiv, PubMed 등의 링크
+  url String?
+
+  // === AI 생성 콘텐츠 ===
+
+  /// AI가 생성한 요약문 (선택 사항)
+  /// 핵심 내용을 간결하게 정리한 텍스트
+  aiSummary String?
+
+  // === 통계 데이터 (비정규화) ===
+  // 성능 향상을 위해 집계 데이터를 여기에 저장
+  // 실제 데이터는 Reaction, PaperView, Comment 테이블에 있음
+
+  /// 좋아요 수
+  /// Reaction 테이블에서 LIKE 타입 집계
+  likeCount Int @default(0)
+
+  /// 싫어요 수
+  /// Reaction 테이블에서 UNLIKE 타입 집계
+  unlikeCount Int @default(0)
+
+  /// 공유 수
+  /// Reaction 테이블에서 SHARE 타입 집계
+  shareCount Int @default(0)
+
+  /// 총 조회 수
+  /// PaperView 테이블 집계
+  totalViewCount Int @default(0)
+
+  /// 댓글 수
+  /// Comment 테이블 집계
+  commentCount Int @default(0)
+
+  // === 썸네일 이미지 ===
+
+  /// 썸네일 이미지 Asset ID (선택 사항, 1:1 관계)
+  thumbnailId String? @unique
+
+  /// 썸네일 이미지 Asset 객체
+  thumbnail Asset? @relation("PaperThumbnail", fields: [thumbnailId], references: [id])
+
+  // === 관계 정의 ===
+
+  /// 논문 첨부파일 목록 (1:N)
+  /// PDF, 보충 자료 등
+  assets Asset[] @relation("PaperAssets")
+
+  /// 이 논문을 북마크한 사용자 목록 (1:N)
+  bookmarks Bookmark[]
+
+  /// 이 논문에 달린 댓글 목록 (1:N)
+  comments Comment[]
+
+  /// 이 논문에 대한 반응 목록 (1:N)
+  reactions Reaction[]
+
+  /// 이 논문의 조회 기록 (1:N)
+  paperViews PaperView[]
+
+  /// 이 논문에 대한 토론 스레드 목록 (1:N)
+  discussions Discussion[]
+
+  /// 이 논문과 관련된 다른 논문들 (1:N)
+  /// 이 논문이 source인 관계
+  relatedPapers PaperRelation[] @relation("SourcePaper")
+
+  /// 이 논문을 참조하는 다른 논문들 (1:N)
+  /// 이 논문이 target인 관계
+  relatingPapers PaperRelation[] @relation("RelatedPaper")
+
+  /// 논문 등록 시각
+  createdAt DateTime @default(now())
+
+  /// 논문 정보 최종 수정 시각
+  updatedAt DateTime @updatedAt
+
+  userActivities UserActivity[]
+
+  /// DOI로 빠른 검색을 위한 인덱스
+  @@index([doi])
+  /// 연도별 정렬을 위한 인덱스
+  @@index([year])
+  /// 최신순 정렬을 위한 인덱스
+  @@index([createdAt])
+  /// 카테고리별 필터링을 위한 인덱스
+  @@index([categories])
+  /// 태그별 필터링을 위한 인덱스
+  @@index([tags])
+}

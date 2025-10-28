@@ -1,0 +1,66 @@
+/// 구독 모델
+/// 사용자가 특정 카테고리, 태그, 저널, 저자를 구독하여
+/// 해당 항목의 새 논문 알림을 받을 수 있음
+model Subscription {
+  /// 구독 고유 ID (UUID)
+  id String @id @default(uuid())
+
+  /// 구독자 ID
+  userId String
+
+  /// 구독자 객체
+  /// 사용자 삭제 시 구독도 함께 삭제 (Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 구독 타입
+  /// CATEGORY: 카테고리 구독, TAG: 태그 구독, 
+  /// JOURNAL: 저널 구독, AUTHOR: 저자 구독
+  type SubscriptionType
+
+  /// 구독 대상
+  /// 예: "Artificial Intelligence" (카테고리)
+  ///     "machine-learning" (태그)
+  ///     "Nature" (저널)
+  ///     "Yoshua Bengio" (저자)
+  target String
+
+  /// 구독 활성 상태
+  /// true: 활성 (알림 받음), false: 비활성 (알림 안 받음)
+  /// 구독 취소하지 않고 일시적으로 끌 때 사용
+  isActive Boolean @default(true)
+
+  /// 구독 생성 시각
+  createdAt DateTime @default(now())
+
+  /// 구독 최종 수정 시각
+  updatedAt DateTime @updatedAt
+
+  /// 사용자당 타입당 대상당 하나의 구독만 가능 (중복 방지)
+  /// 예: 한 사용자가 "AI" 카테고리를 두 번 구독할 수 없음
+  @@unique([userId, type, target])
+  /// 사용자별 구독 목록 조회를 위한 인덱스
+  @@index([userId])
+  /// 타입별 구독 통계를 위한 인덱스
+  @@index([type])
+  /// 대상별 구독자 수 집계를 위한 인덱스
+  @@index([target])
+}
+
+/// 구독 타입
+enum SubscriptionType {
+  /// 카테고리 구독
+  /// 예: "Artificial Intelligence", "Biology"
+  CATEGORY
+
+  /// 태그 구독
+  /// 예: "machine-learning", "covid-19"
+  TAG
+
+  /// 저널 구독
+  /// 예: "Nature", "Science", "NeurIPS"
+  JOURNAL
+
+  /// 저자 구독
+  /// 예: "Geoffrey Hinton", "Yoshua Bengio"
+  AUTHOR
+}

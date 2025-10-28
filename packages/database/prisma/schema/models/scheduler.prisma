@@ -1,0 +1,54 @@
+/// 스케줄러 모델
+/// 정기적으로 실행되는 작업을 관리
+/// 예: 알림 생성, 이메일 발송, 통계 업데이트, 논문 크롤링
+model Scheduler {
+  /// 스케줄러 고유 ID (UUID)
+  id String @id @default(uuid())
+
+  /// 소유자(관리자) ID
+  userId String
+
+  /// 소유자 객체
+  /// 스케줄러는 사용자와 연결되지만 삭제 시 Cascade 안 함
+  /// 관리자 계정 삭제 시 스케줄러는 유지
+  user User @relation(fields: [userId], references: [id])
+
+  /// 스케줄러 이름
+  /// 예: "주간 다이제스트 이메일", "새 논문 추천 알림"
+  name String
+
+  /// 스케줄러 설명
+  /// 작업 내용 및 목적 설명
+  description String
+
+  /// Cron 표현식
+  /// 실행 주기 정의
+  /// 예: "0 9 * * MON" (매주 월요일 9시)
+  ///     "0 0 * * *" (매일 자정)
+  ///     "0 */6 * * *" (6시간마다)
+  cronExpression String
+
+  /// 마지막 실행 시각 (선택 사항)
+  /// 작업이 마지막으로 실행된 시각
+  lastRun DateTime?
+
+  /// 다음 실행 예정 시각 (선택 사항)
+  /// Cron 표현식으로 계산된 다음 실행 시각
+  nextRun DateTime?
+
+  /// 스케줄러 상태
+  /// ACTIVE: 활성 (실행 중), INACTIVE: 비활성 (일시 중지)
+  status SchedulerStatus @default(ACTIVE)
+
+  /// 스케줄러 생성 시각
+  createdAt DateTime @default(now())
+}
+
+/// 스케줄러 상태
+enum SchedulerStatus {
+  /// 활성 - 정상적으로 실행됨
+  ACTIVE
+
+  /// 비활성 - 일시 중지됨 (수동으로 재활성화 필요)
+  INACTIVE
+}

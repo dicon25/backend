@@ -1,0 +1,63 @@
+/// 댓글 모델
+/// 논문에 대한 사용자의 댓글과 토론을 저장
+/// 계층형 구조로 대댓글 지원
+model Comment {
+  /// 댓글 고유 ID (UUID)
+  id String @id @default(uuid())
+
+  /// 작성자 ID
+  userId String
+
+  /// 작성자 객체
+  /// 사용자 삭제 시 댓글도 함께 삭제 (Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 논문 ID
+  paperId String
+
+  /// 논문 객체
+  /// 논문 삭제 시 댓글도 함께 삭제 (Cascade)
+  paper Paper @relation(fields: [paperId], references: [id], onDelete: Cascade)
+
+  /// 댓글 내용
+  /// Text 타입으로 긴 내용 지원
+  content String @db.Text
+
+  // === 계층형 구조 (대댓글) ===
+
+  /// 부모 댓글 ID (선택 사항)
+  /// null이면 최상위 댓글, 값이 있으면 대댓글
+  parentId String?
+
+  /// 부모 댓글 객체
+  /// 부모 댓글 삭제 시 대댓글도 함께 삭제 (Cascade)
+  parent Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+
+  /// 이 댓글에 달린 대댓글 목록
+  replies Comment[] @relation("CommentReplies")
+
+  // === 통계 ===
+
+  /// 댓글에 대한 좋아요 수
+  /// 유용한 댓글을 상단에 표시하는 데 사용
+  likeCount Int @default(0)
+
+  /// 수정 여부
+  /// true면 작성 후 수정된 댓글
+  isEdited Boolean @default(false)
+
+  /// 댓글 작성 시각
+  createdAt DateTime @default(now())
+
+  /// 댓글 최종 수정 시각
+  updatedAt DateTime @updatedAt
+
+  /// 작성자별 댓글 목록 조회를 위한 인덱스
+  @@index([userId])
+  /// 논문별 댓글 목록 조회를 위한 인덱스
+  @@index([paperId])
+  /// 대댓글 조회를 위한 인덱스
+  @@index([parentId])
+  /// 최신순 정렬을 위한 인덱스
+  @@index([createdAt])
+}
