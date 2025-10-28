@@ -1,3 +1,5 @@
+import { PrismaService } from '@/common/modules/prisma/prisma.service';
+import { Public } from '@/modules/user/presentation/decorators';
 import { RedisHealthIndicator } from '@liaoliaots/nestjs-redis-health'; // Redis HealthIndicator
 import { Controller, Get } from '@nestjs/common';
 import {
@@ -6,10 +8,8 @@ import {
   HttpHealthIndicator,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
-import { PrismaClient } from '@workspace/database';
+import { PrismaClient } from '@scholub/database';
 import Redis from 'ioredis';
-import { PrismaService } from '@/common/modules/prisma/prisma.service';
-import { Public } from '@/modules/user/presentation/decorators';
 
 @Controller()
 export class HealthController {

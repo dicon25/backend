@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { UserStatus } from '@workspace/database';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AuthProvider, UserStatus } from '@scholub/database';
 import { DataClass } from 'dataclasses';
 
 export class UserDetailResponseDto extends DataClass {
@@ -14,6 +14,31 @@ export class UserDetailResponseDto extends DataClass {
     example:     'test@example.com',
   })
   email: string;
+
+  @ApiProperty({
+    description: 'The OAuth provider',
+    example:     'GOOGLE',
+    enum:        AuthProvider,
+  })
+  provider: AuthProvider;
+
+  @ApiProperty({
+    description: 'The provider user ID',
+    example:     'google_123456789',
+  })
+  providerId: string;
+
+  @ApiPropertyOptional({
+    description: 'The name of the user',
+    example:     'John Doe',
+  })
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'The bio of the user',
+    example:     'AI researcher',
+  })
+  bio?: string;
 
   @ApiProperty({
     description: 'The status of the user',

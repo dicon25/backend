@@ -1,4 +1,4 @@
-import type { LogLevel } from '@workspace/database';
+import type { LogLevel } from '@scholub/database';
 
 export class CreateLogDto {
   level:   LogLevel;

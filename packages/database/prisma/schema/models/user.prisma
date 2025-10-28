@@ -1,15 +1,106 @@
+/// 사용자 모델
+/// Google OAuth를 통해 인증된 사용자 정보를 저장
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
+  /// 사용자 고유 ID (UUID)
+  id String @id @default(uuid())
 
+  /// 사용자 이메일 주소 (Google 계정)
+  /// 중복 불가, 로그인 식별자로 사용
+  email String @unique
+
+  /// OAuth 인증 제공자 (현재는 Google만 지원)
+  provider AuthProvider @default(GOOGLE)
+
+  /// OAuth 제공자의 사용자 고유 ID (Google User ID)
+  /// 중복 불가, Google 계정과의 연동 키
+  providerId String @unique
+
+  /// 사용자 표시 이름 (Google 프로필 이름)
+  /// 선택 사항
+  name String?
+
+  /// 사용자 자기소개
+  /// 선택 사항, 프로필 페이지에 표시
+  bio String?
+
+  /// 프로필 이미지 Asset ID
+  /// 선택 사항, 1:1 관계로 각 사용자는 하나의 아바타만 가능
+  avatarId String? @unique
+
+  /// 프로필 이미지 Asset 객체
+  /// UserAvatar 관계로 연결
+  avatar Asset? @relation("UserAvatar", fields: [avatarId], references: [id])
+
+  /// 사용자 계정 상태
+  /// ACTIVE: 활성, INACTIVE: 비활성, SUSPENDED: 정지
   status UserStatus @default(ACTIVE)
 
+  // === 관계 정의 ===
+
+  /// 사용자 개인 설정 (1:1)
+  /// 관심사, 알림 설정 등
+  preferences UserPreference?
+
+  /// 사용자가 북마크한 논문 목록 (1:N)
+  bookmarks Bookmark[]
+
+  /// 사용자가 작성한 댓글 목록 (1:N)
+  comments Comment[]
+
+  /// 사용자가 남긴 반응(좋아요/싫어요/공유) 목록 (1:N)
+  reactions Reaction[]
+
+  /// 사용자의 논문 조회 기록 (1:N)
+  paperViews PaperView[]
+
+  /// 사용자가 받은 알림 목록 (1:N)
+  notifications Notification[]
+
+  /// 사용자의 구독 목록 (카테고리/태그/저널/저자) (1:N)
+  subscriptions Subscription[]
+
+  /// 사용자의 AI 채팅 세션 목록 (1:N)
+  chatSessions ChatSession[]
+
+  /// 사용자의 스케줄러 작업 목록 (1:N)
+  schedulers Scheduler[]
+
+  /// 사용자의 활동 기록 (1:N)
+  /// 참여도 계산 및 추천 알고리즘에 사용
+  userActivities UserActivity[]
+
+  /// 사용자의 토론 목록 (1:N)
+  /// 토론 생성자
+  discussions        Discussion[]
+  discussionMessages DiscussionMessage[]
+
+  /// 계정 생성 시각
   createdAt DateTime @default(now())
+
+  /// 계정 정보 최종 수정 시각
   updatedAt DateTime @updatedAt
+
+  /// 이메일로 빠른 검색을 위한 인덱스
+  @@index([email])
+  /// OAuth Provider ID로 빠른 검색을 위한 인덱스
+  @@index([providerId])
 }
 
+/// 사용자 계정 상태
 enum UserStatus {
+  /// 활성 상태 - 정상적으로 서비스 이용 가능
   ACTIVE
+
+  /// 비활성 상태 - 본인이 비활성화하거나 장기 미접속
   INACTIVE
+
+  /// 정지 상태 - 관리자에 의해 계정 정지됨
+  SUSPENDED
+}
+
+/// OAuth 인증 제공자
+/// 향후 다른 제공자(GitHub, Apple 등) 추가 가능
+enum AuthProvider {
+  /// Google OAuth 2.0
+  GOOGLE
 }

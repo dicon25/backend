@@ -1,16 +1,16 @@
 {
-  "name": "nestjs-template",
+  "name": "@scholub/backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "api": "pnpm --filter @workspace/api",
-    "database": "pnpm --filter @workspace/database"
+    "api": "pnpm --filter @scholub/api",
+    "database": "pnpm --filter @scholub/database"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@9.15.2",
   "devDependencies": {
     "@code-guideline/eslint": "^0.1.6",
     "@types/node": "^24.7.1",

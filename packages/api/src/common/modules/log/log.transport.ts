@@ -1,6 +1,6 @@
-import type { LogLevel, Prisma } from '@workspace/database';
-import TransportStream from 'winston-transport';
 import type { PrismaService } from '@/common/modules/prisma';
+import type { LogLevel, Prisma } from '@scholub/database';
+import TransportStream from 'winston-transport';
 
 type LogTransportOptions = TransportStream.TransportStreamOptions & {
   prisma: PrismaService;

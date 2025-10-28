@@ -25,9 +25,9 @@ COPY . .
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 
-RUN pnpm --filter @workspace/database run generate
+RUN pnpm --filter @scholub/database run generate
 
-RUN pnpm --filter @workspace/api run build
+RUN pnpm --filter @scholub/api run build
 
 FROM base AS deps
 

@@ -1,5 +1,5 @@
 import { AssetEntity } from '@modules/asset/domain/entities';
-import type { Asset } from '@workspace/database';
+import type { Asset } from '@scholub/database';
 
 export class AssetMapper {
   static toDomain(asset: Asset): AssetEntity {

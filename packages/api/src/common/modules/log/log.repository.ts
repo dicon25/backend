@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@workspace/database';
 import { PrismaService } from '@/common/modules/prisma';
+import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@scholub/database';
 import { CreateLogDto } from './dto/create-log.dto';
 
 @Injectable()

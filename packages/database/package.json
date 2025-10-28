@@ -1,5 +1,5 @@
 {
-	"name": "@workspace/database",
+	"name": "@scholub/database",
 	"version": "0.0.1",
 	"description": "NestJS Template Database Schema",
 	"scripts": {

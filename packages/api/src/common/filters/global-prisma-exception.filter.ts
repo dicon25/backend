@@ -5,8 +5,8 @@ import {
   type ExceptionFilter,
   HttpStatus,
 } from '@nestjs/common';
+import { Prisma } from '@scholub/database';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
-import { Prisma } from '@workspace/database';
 import type { Request, Response } from 'express';
 import { APIResponseDto, type HttpMethod } from '../dto/response.dto';
 import { LogService } from '../modules/log/log.service';

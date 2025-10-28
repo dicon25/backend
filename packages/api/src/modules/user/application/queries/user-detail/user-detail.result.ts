@@ -1,4 +1,4 @@
-import { UserStatus } from '@workspace/database';
+import { UserStatus } from '@scholub/database';
 import { DataClass } from 'dataclasses';
 
 export class UserDetailResult extends DataClass {

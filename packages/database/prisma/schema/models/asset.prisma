@@ -1,14 +1,54 @@
+/// 파일 자산 모델
+/// 논문 첨부파일, 썸네일 이미지, 사용자 프로필 이미지 등을 저장
+/// S3와 연동되어 실제 파일은 S3에 저장되고, 메타데이터만 DB에 저장
 model Asset {
+  /// 자산 고유 ID (UUID)
   id String @id @default(uuid())
 
-  filename         String
+  /// 저장된 파일명
+  /// S3에 저장될 때 사용되는 파일명 (중복 방지를 위해 변환된 이름)
+  filename String
+
+  /// 원본 파일명
+  /// 사용자가 업로드한 파일의 원래 이름
   originalFilename String
 
+  /// MIME 타입
+  /// 예: image/png, application/pdf, image/jpeg
   contentType String
 
+  /// 파일 크기 (바이트 단위)
+  /// BigInt 타입으로 대용량 파일 지원
   fileSize BigInt
 
+  /// S3 객체 키 (Object Key)
+  /// S3에서 파일을 식별하는 고유 키
+  /// 중복 불가
   key String @unique
 
+  // === 관계 정의 ===
+
+  /// 논문 ID (선택 사항)
+  /// 이 자산이 특정 논문의 첨부파일인 경우
+  paperId String?
+
+  /// 논문 첨부파일 관계
+  /// 논문 삭제 시 함께 삭제 (Cascade)
+  paper Paper? @relation("PaperAssets", fields: [paperId], references: [id], onDelete: Cascade)
+
+  /// 논문 썸네일 관계 (1:1)
+  /// 이 자산이 특정 논문의 썸네일인 경우
+  paperThumbnail Paper? @relation("PaperThumbnail")
+
+  /// 사용자 아바타 관계 (1:1)
+  /// 이 자산이 특정 사용자의 프로필 이미지인 경우
+  userAvatar User? @relation("UserAvatar")
+
+  /// 자산 생성 시각 (업로드 시각)
   createdAt DateTime @default(now())
+
+  /// S3 키로 빠른 검색을 위한 인덱스
+  @@index([key])
+  /// 논문별 자산 조회를 위한 인덱스
+  @@index([paperId])
 }
