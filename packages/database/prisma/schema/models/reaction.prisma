@@ -1,50 +1,24 @@
-/// 반응 모델
-/// 사용자가 논문에 대해 남긴 반응 (좋아요/싫어요/공유)을 저장
-/// 논문 통계 집계에 사용
 model Reaction {
-  /// 반응 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 사용자 ID
   userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// 사용자 객체
-  /// 사용자 삭제 시 반응도 함께 삭제 (Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  /// 논문 ID
   paperId String
+  paper   Paper  @relation(fields: [paperId], references: [id], onDelete: Cascade)
 
-  /// 논문 객체
-  /// 논문 삭제 시 반응도 함께 삭제 (Cascade)
-  paper Paper @relation(fields: [paperId], references: [id], onDelete: Cascade)
-
-  /// 반응 타입
-  /// LIKE: 좋아요, UNLIKE: 싫어요, SHARE: 공유
   type ReactionType
 
-  /// 반응 생성 시각
   createdAt DateTime @default(now())
 
-  /// 사용자당 논문당 반응 타입당 하나만 가능 (중복 방지)
-  /// 예: 한 사용자가 같은 논문에 좋아요를 여러 번 누를 수 없음
   @@unique([userId, paperId, type])
-  /// 사용자별 반응 목록 조회를 위한 인덱스
   @@index([userId])
-  /// 논문별 반응 집계를 위한 인덱스
   @@index([paperId])
-  /// 반응 타입별 집계를 위한 인덱스
   @@index([type])
 }
 
-/// 반응 타입
 enum ReactionType {
-  /// 좋아요 - 논문이 유용하거나 흥미로움
   LIKE
-
-  /// 싫어요 - 논문의 문제점이나 동의하지 않음
   UNLIKE
-
-  /// 공유 - 논문을 다른 사람과 공유
   SHARE
 }

@@ -1,84 +1,28 @@
-/// 시스템 로그 모델
-/// 애플리케이션의 모든 로그를 저장
-/// 디버깅, 모니터링, 감사(Audit)에 사용
 model Log {
-  /// 로그 ID (자동 증가)
-  /// BigInt로 많은 로그 기록 지원
   id BigInt @id @default(autoincrement())
 
-  /// 로그 레벨
-  /// INFO, WARN, ERROR, DEBUG, SUCCESS
-  level LogLevel
+  level      LogLevel
+  service    String   @db.VarChar(100)
+  message    String   @db.VarChar(500)
+  stackTrace String?  @db.Text
+  context    Json?    @db.JsonB
+  userId     String?  @db.VarChar(36)
+  requestId  String?  @db.VarChar(36)
 
-  /// 서비스/모듈 이름
-  /// 로그를 생성한 서비스 식별
-  /// 예: "Auth", "Paper", "Notification"
-  service String @db.VarChar(100)
-
-  /// 로그 메시지
-  /// 간단한 로그 내용
-  message String @db.VarChar(500)
-
-  /// 스택 트레이스 (선택 사항)
-  /// 에러 발생 시 전체 스택 트레이스
-  /// ERROR 레벨에서 주로 사용
-  stackTrace String? @db.Text
-
-  /// 컨텍스트 정보 (선택 사항, JSON)
-  /// 추가적인 디버깅 정보
-  /// 예: { "method": "POST", "endpoint": "/api/papers", "statusCode": 201 }
-  context Json? @db.JsonB
-
-  /// 사용자 ID (선택 사항)
-  /// 이 로그와 관련된 사용자
-  userId String? @db.VarChar(36)
-
-  /// 요청 ID (선택 사항)
-  /// API 요청 추적을 위한 고유 ID
-  /// 같은 요청의 모든 로그를 묶어서 조회 가능
-  requestId String? @db.VarChar(36)
-
-  /// IP 주소 (선택 사항)
-  /// 요청을 보낸 클라이언트 IP
-  ip String? @db.VarChar(45)
-
-  /// User Agent (선택 사항)
-  /// 클라이언트 브라우저/기기 정보
-  userAgent String? @db.VarChar(500)
-
-  /// 로그 생성 시각
-  /// Timestamptz로 타임존 포함
   createdAt DateTime @default(now()) @db.Timestamptz
 
-  /// 최신 로그 조회를 위한 인덱스 (내림차순)
   @@index([createdAt(sort: Desc)])
-  /// 레벨별 로그 조회를 위한 복합 인덱스
   @@index([level, createdAt(sort: Desc)])
-  /// 서비스별 로그 조회를 위한 복합 인덱스
   @@index([service, createdAt(sort: Desc)])
-  /// 사용자별 로그 조회를 위한 복합 인덱스
   @@index([userId, createdAt(sort: Desc)])
-  /// 요청 ID로 관련 로그 조회를 위한 인덱스
   @@index([requestId])
-  /// 데이터베이스 테이블명을 "logs"로 지정
   @@map("logs")
 }
 
-/// 로그 레벨
-/// 로그의 중요도 및 타입 분류
 enum LogLevel {
-  /// 정보 - 일반적인 정보성 로그
   INFO
-
-  /// 경고 - 주의가 필요한 상황
   WARN
-
-  /// 에러 - 오류 발생
   ERROR
-
-  /// 디버그 - 개발/디버깅용 상세 로그
   DEBUG
-
-  /// 성공 - 중요 작업 성공
   SUCCESS
 }

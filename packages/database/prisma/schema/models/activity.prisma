@@ -1,86 +1,29 @@
-/// 사용자 활동 추적 모델
-/// 사용자의 모든 활동을 기록하여 참여도 측정 및 추천 알고리즘에 활용
-/// "토론을 열심히 한" 등의 기준 판단에 사용
 model UserActivity {
-  /// 활동 기록 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 사용자 ID
   userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// 사용자 객체
-  /// 사용자 삭제 시 활동 기록도 함께 삭제 (Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  /// 관련 논문 ID (선택 사항)
-  /// 논문과 관련된 활동의 경우 기록
   paperId String?
   paper   Paper?  @relation(fields: [paperId], references: [id], onDelete: Cascade)
 
-  /// 활동 타입
-  /// 조회, 북마크, 댓글, 반응, 공유, 토론 등
   type ActivityType
 
-  /// 활동 상세 정보 (JSON, 선택 사항)
-  /// 추가적인 메타데이터 저장
-  /// 예: { "commentId": "xxx", "reactionType": "LIKE" }
   metadata Json?
 
-  /// 활동 점수 (참여도 계산용)
-  /// 활동 타입별로 다른 점수 부여
-  /// 예: VIEW_PAPER: 1점, COMMENT: 5점, START_DISCUSSION: 10점
-  /// 높은 점수 = 더 적극적인 참여
-  score Int @default(1)
-
-  /// 활동 발생 시각
   createdAt DateTime @default(now())
 
-  /// 사용자별 활동 목록 조회를 위한 인덱스
   @@index([userId])
-  /// 논문별 활동 통계를 위한 인덱스
   @@index([paperId])
-  /// 활동 타입별 통계를 위한 인덱스
   @@index([type])
-  /// 시간대별 활동 통계를 위한 인덱스
   @@index([createdAt])
 }
 
-/// 활동 타입
-/// 각 활동마다 점수가 다르게 부여됨
 enum ActivityType {
-  /// 논문 조회 (점수: 1점)
-  /// 가장 기본적인 활동
   VIEW_PAPER
-
-  /// 논문 북마크 (점수: 3점)
-  /// 관심 있는 논문 저장
-  BOOKMARK_PAPER
-
-  /// 댓글 작성 (점수: 5점)
-  /// 적극적인 참여
-  COMMENT
-
-  /// 댓글 답변 (점수: 3점)
-  /// 다른 사람과의 소통
-  REPLY_COMMENT
-
-  /// 반응 (좋아요 등) (점수: 1점)
-  /// 간단한 피드백
+  STAY_LONG_TIME
   REACT
-
-  /// 공유 (점수: 2점)
-  /// 논문 홍보
-  SHARE
-
-  /// 토론 시작 (점수: 10점)
-  /// 매우 적극적인 참여
   START_DISCUSSION
-
-  /// 토론 참여 (점수: 7점)
-  /// 심화 논의 참여
   JOIN_DISCUSSION
-
-  /// AI 채팅 (점수: 2점)
-  /// 논문 관련 질문
   CHAT_MESSAGE
 }

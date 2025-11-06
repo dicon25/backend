@@ -1,84 +1,33 @@
-/// 논문 간 관계 모델
-/// AI가 분석한 논문 간의 관계를 저장
-/// 비슷한 논문, 반대 주장 논문 등을 판단하여 알림 생성에 활용
 model PaperRelation {
-  /// 관계 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 소스 논문 ID
-  /// 관계의 시작점이 되는 논문
   sourcePaperId String
+  sourcePaper   Paper  @relation("SourcePaper", fields: [sourcePaperId], references: [id], onDelete: Cascade)
 
-  /// 소스 논문 객체
-  /// 논문 삭제 시 관계도 함께 삭제 (Cascade)
-  sourcePaper Paper @relation("SourcePaper", fields: [sourcePaperId], references: [id], onDelete: Cascade)
-
-  /// 관련 논문 ID
-  /// 관계의 대상이 되는 논문
   relatedPaperId String
+  relatedPaper   Paper  @relation("RelatedPaper", fields: [relatedPaperId], references: [id], onDelete: Cascade)
 
-  /// 관련 논문 객체
-  /// 논문 삭제 시 관계도 함께 삭제 (Cascade)
-  relatedPaper Paper @relation("RelatedPaper", fields: [relatedPaperId], references: [id], onDelete: Cascade)
-
-  /// 관계 타입
-  /// SIMILAR: 비슷한 논문, OPPOSING: 반대 주장 등
   type RelationType
 
-  /// AI가 계산한 유사도 점수 (선택 사항)
-  /// 0.0 ~ 1.0 범위
-  /// 1.0에 가까울수록 더 유사하거나 관련성이 높음
   similarityScore Float?
 
-  /// 관계에 대한 설명 (선택 사항)
-  /// 예: "Both papers use transformer architecture"
-  ///     "Paper B refutes the main argument of Paper A"
   description String?
 
-  /// AI가 분석한 메타데이터 (선택 사항, JSON)
-  /// 추가적인 분석 정보 저장
-  /// 예: { "sharedAuthors": ["John Doe"], "overlappingTopics": ["NLP", "Attention"] }
   metadata Json?
 
-  /// 관계 생성 시각 (AI가 분석한 시각)
   createdAt DateTime @default(now())
-
-  /// 관계 최종 수정 시각
   updatedAt DateTime @updatedAt
 
-  /// 소스-관련-타입 조합으로 중복 방지
-  /// 같은 두 논문 사이에 같은 타입의 관계는 하나만 존재
   @@unique([sourcePaperId, relatedPaperId, type])
-  /// 소스 논문의 관련 논문 조회를 위한 인덱스
   @@index([sourcePaperId])
-  /// 관련 논문을 참조하는 논문 조회를 위한 인덱스
   @@index([relatedPaperId])
-  /// 관계 타입별 통계를 위한 인덱스
   @@index([type])
 }
 
-/// 논문 간 관계 타입
-/// AI가 자동으로 분석하여 분류
 enum RelationType {
-  /// 비슷한 결의 논문
-  /// 같은 주제, 비슷한 방법론, 유사한 결론
-  /// 알림: "북마크한 논문과 비슷한 새 논문이 있습니다"
   SIMILAR
-
-  /// 반대 주장 논문
-  /// 상반된 결론, 다른 견해, 논쟁적 관계
-  /// 알림: "북마크한 논문과 다른 견해의 새 논문이 있습니다"
   OPPOSING
-
-  /// 확장/후속 연구
-  /// 원 논문을 발전시키거나 보완하는 연구
   EXTENSION
-
-  /// 인용 관계
-  /// 한 논문이 다른 논문을 참고문헌으로 인용
   CITATION
-
-  /// 관련 주제
-  /// 직접적인 관계는 아니지만 관련된 주제 다룸
   RELATED_TOPIC
 }

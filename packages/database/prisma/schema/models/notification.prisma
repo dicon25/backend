@@ -1,64 +1,30 @@
-/// 알림 모델
-/// 사용자에게 전송되는 모든 알림을 저장
-/// 맞춤 추천, 댓글 답변, 주간 다이제스트 등 다양한 알림 타입 지원
 model Notification {
-  /// 알림 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 수신자 ID
   userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// 수신자 객체
-  /// 사용자 삭제 시 알림도 함께 삭제 (Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  /// 알림 타입
-  /// 추천, 댓글 답변, 토론 활동 등
   type NotificationType
 
-  /// 알림 제목
-  /// 짧은 요약 문구
   title String
 
-  /// 알림 본문
-  /// 상세 내용
   message String @db.Text
 
-  // === 관련 리소스 ===
-
-  /// 관련 논문 ID (선택 사항)
-  /// 논문 관련 알림의 경우 논문 링크에 사용
   relatedPaperId String?
 
-  /// 관련 사용자 ID (선택 사항)
-  /// 댓글 답변 등에서 누가 작성했는지 표시
   relatedUserId String?
 
-  // === 알림 상태 ===
-
-  /// 읽음 여부
-  /// false: 안 읽음, true: 읽음
   isRead Boolean @default(false)
 
-  /// 읽은 시각 (선택 사항)
-  /// 사용자가 알림을 확인한 시각
   readAt DateTime?
 
-  /// 알림 우선순위
-  /// LOW: 낮음, NORMAL: 보통, HIGH: 높음, URGENT: 긴급
-  /// UI에서 표시 순서 결정에 사용
   priority NotificationPriority @default(NORMAL)
 
-  /// 알림 생성 시각
   createdAt DateTime @default(now())
 
-  /// 사용자별 알림 목록 조회를 위한 인덱스
   @@index([userId])
-  /// 읽지 않은 알림 필터링을 위한 인덱스
   @@index([isRead])
-  /// 알림 타입별 필터링을 위한 인덱스
   @@index([type])
-  /// 최신순 정렬을 위한 인덱스
   @@index([createdAt])
 }
 

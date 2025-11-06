@@ -1,114 +1,49 @@
-/// 토론 스레드 모델
-/// 논문에 대한 심화 토론 공간
-/// 댓글보다 더 체계적이고 긴 논의를 위한 공간
 model Discussion {
-  /// 토론 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 논문 ID
   paperId String
+  paper   Paper  @relation(fields: [paperId], references: [id], onDelete: Cascade)
 
-  /// 논문 객체
-  /// 논문 삭제 시 토론도 함께 삭제 (Cascade)
-  paper Paper @relation(fields: [paperId], references: [id], onDelete: Cascade)
-
-  /// 토론 제목
-  /// 토론 주제를 명확히 표현
   title String
 
-  /// 토론 내용
-  /// 토론 시작자의 의견이나 질문
   content String @db.Text
 
-  /// 토론 생성자 ID
-  /// User와 직접 관계는 없지만 생성자 식별용
   creatorId String
   creator   User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
-  // === 통계 ===
-
-  /// 토론 참여자 수
-  /// 메시지를 작성한 고유 사용자 수
   participantCount Int @default(0)
 
-  /// 토론 메시지 수
-  /// 총 메시지(댓글) 개수
   messageCount Int @default(0)
 
-  /// 토론 메시지 목록
   messages DiscussionMessage[]
 
-  /// 토론 생성 시각
   createdAt DateTime @default(now())
-
-  /// 토론 최종 수정 시각
   updatedAt DateTime @updatedAt
 
-  /// 논문별 토론 목록 조회를 위한 인덱스
   @@index([paperId])
-  /// 생성자별 토론 목록 조회를 위한 인덱스
   @@index([creatorId])
-  /// 최신순 정렬을 위한 인덱스
   @@index([createdAt])
 }
 
-/// 토론 메시지 모델
-/// 토론 스레드 내의 각 메시지(댓글)
-/// 계층형 구조로 대댓글 지원
 model DiscussionMessage {
-  /// 메시지 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 토론 ID
   discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 
-  /// 토론 객체
-  /// 토론 삭제 시 메시지도 함께 삭제 (Cascade)
-  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-
-  /// 작성자 ID
-  /// User와 직접 관계는 없지만 작성자 식별용
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// 메시지 내용
   content String @db.Text
 
-  // === 계층형 구조 (대댓글) ===
-
-  /// 부모 메시지 ID (선택 사항)
-  /// null이면 최상위 메시지, 값이 있으면 대댓글
-  parentId String?
-
-  /// 부모 메시지 객체
-  /// 부모 메시지 삭제 시 대댓글도 함께 삭제 (Cascade)
-  parent DiscussionMessage? @relation("MessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
-
-  /// 이 메시지에 달린 대댓글 목록
-  replies DiscussionMessage[] @relation("MessageReplies")
-
-  // === 통계 ===
-
-  /// 메시지에 대한 좋아요 수
-  /// 유용한 의견을 상단에 표시하는 데 사용
   likeCount Int @default(0)
 
-  /// 수정 여부
-  /// true면 작성 후 수정된 메시지
   isEdited Boolean @default(false)
 
-  /// 메시지 작성 시각
   createdAt DateTime @default(now())
-
-  /// 메시지 최종 수정 시각
   updatedAt DateTime @updatedAt
 
-  /// 토론별 메시지 목록 조회를 위한 인덱스
   @@index([discussionId])
-  /// 작성자별 메시지 목록 조회를 위한 인덱스
   @@index([userId])
-  /// 대댓글 조회를 위한 인덱스
-  @@index([parentId])
-  /// 최신순 정렬을 위한 인덱스
   @@index([createdAt])
 }

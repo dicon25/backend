@@ -1,92 +1,18 @@
-/// 사용자 맞춤 설정 모델
-/// 사용자의 관심사, 필터 설정, 알림 설정 등을 저장
-/// 각 사용자당 하나의 설정만 존재 (1:1 관계)
 model UserPreference {
-  /// 설정 고유 ID (UUID)
   id String @id @default(uuid())
 
-  /// 사용자 ID (1:1 관계)
-  /// 중복 불가
   userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// 사용자 객체
-  /// 사용자 삭제 시 설정도 함께 삭제 (Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // === 관심사 설정 ===
-
-  /// 관심 있는 카테고리 배열
-  /// 예: ["Artificial Intelligence", "Biology"]
-  /// 맞춤 추천 알고리즘에 사용
   interestedCategories String[] @default([])
+  excludedCategories   String[] @default([])
 
-  /// 관심 있는 태그 배열
-  /// 예: ["machine-learning", "covid-19"]
-  /// 세부적인 추천 필터링에 사용
-  interestedTags String[] @default([])
-
-  /// 관심 있는 저널 배열
-  /// 예: ["Nature", "Science", "NeurIPS"]
-  /// 특정 저널의 논문 우선 추천
-  interestedJournals String[] @default([])
-
-  /// 제외할 카테고리 배열
-  /// 관심 없는 분야의 논문 필터링
-  excludedCategories String[] @default([])
-
-  /// 최소 출판 연도 필터 (선택 사항)
-  /// 설정 시 해당 연도 이후 논문만 추천
   minYear Int?
 
-  // === 알림 설정 ===
-
-  /// 전체 알림 활성화 여부
-  /// false 시 모든 알림 차단
   enableNotifications Boolean @default(true)
 
-  /// 맞춤 추천 알림 활성화
-  /// 관심사 기반 논문 추천 알림
-  enableRecommendations Boolean @default(true)
-
-  /// 비슷한 논문 알림 활성화
-  /// 북마크한 논문과 유사한 새 논문 알림
-  enableSimilarPaperAlerts Boolean @default(true)
-
-  /// 반대 주장 논문 알림 활성화
-  /// 북마크한 논문과 상반된 견해의 새 논문 알림
-  enableOpposingPaperAlerts Boolean @default(true)
-
-  /// 북마크 활동 알림 활성화
-  /// 북마크한 논문의 토론, 댓글 등 활동 알림
-  enableBookmarkActivityAlerts Boolean @default(true)
-
-  // === 이메일 알림 설정 ===
-
-  /// 이메일 알림 활성화 여부
-  enableEmailNotifications Boolean @default(false)
-
-  /// 이메일 발송 빈도
-  /// DAILY: 매일, WEEKLY: 주간, MONTHLY: 월간
-  emailFrequency EmailFrequency @default(WEEKLY)
-
-  /// 설정 생성 시각
   createdAt DateTime @default(now())
-
-  /// 설정 최종 수정 시각
   updatedAt DateTime @updatedAt
 
-  /// 사용자 ID로 빠른 검색을 위한 인덱스
   @@index([userId])
-}
-
-/// 이메일 발송 빈도
-enum EmailFrequency {
-  /// 매일 발송
-  DAILY
-
-  /// 주 1회 발송
-  WEEKLY
-
-  /// 월 1회 발송
-  MONTHLY
 }
