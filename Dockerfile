@@ -43,10 +43,12 @@ RUN corepack enable && corepack prepare pnpm --activate
 
 ENV NODE_ENV=development
 
-RUN apt-get update -y
-RUN apt-get install -y openssl ca-certificates libssl3
+RUN apt-get update -y && \
+    apt-get install -y openssl ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/package.json .
+COPY --from=build /app/pnpm-lock.yaml .
 COPY --from=build /app/pnpm-workspace.yaml .
 COPY --from=build /app/packages/api/package.json ./packages/api/
 COPY --from=build /app/packages/database/package.json ./packages/database/
@@ -56,7 +58,8 @@ COPY --from=build /app/packages/api/dist ./packages/api/dist
 COPY --from=build /app/packages/database/prisma ./packages/database/prisma
 COPY --from=build /app/packages/database/client ./packages/database/client
 
-COPY --from=deps /app/node_modules node_modules
+# Install all dependencies (including devDependencies) for development
+RUN pnpm install --frozen-lockfile
 
 RUN mkdir -p /app/tmp && chmod 777 /app/tmp
 
