@@ -64,4 +64,4 @@ EXPOSE 8000
 
 USER node
 
-CMD ["pnpm", "--filter", "@scholub/api", "run", "start:dev"]
+CMD ["pnpm", "--filter", "@scholub/api", "run", "dev"]
