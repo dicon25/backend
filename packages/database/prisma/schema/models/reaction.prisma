@@ -20,5 +20,4 @@ model Reaction {
 enum ReactionType {
   LIKE
   UNLIKE
-  SHARE
 }

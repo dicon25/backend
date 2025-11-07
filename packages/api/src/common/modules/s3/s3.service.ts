@@ -32,8 +32,8 @@ interface PresignedUrlOptions {
 
 @Injectable()
 export class S3Service {
-  private readonly bucket = process.env.AWS_S3_BUCKET_NAME || '';
-  private readonly endpoint = process.env.AWS_S3_ENDPOINT || '';
+  private readonly bucket = process.env.S3_BUCKET_NAME || '';
+  private readonly endpoint = process.env.S3_ENDPOINT || '';
 
   constructor(@Inject('S3_CLIENT') private readonly s3: S3Client,
     private readonly logger: LogService) {

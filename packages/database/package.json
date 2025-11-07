@@ -24,14 +24,15 @@
 		"url": "https://github.com/jwkwon0817"
 	},
 	"peerDependencies": {
-		"@prisma/client": "^6.17.1",
-		"prisma": "^6.17.1"
+		"@prisma/client": "^6.19.0",
+		"prisma": "^6.19.0"
 	},
 	"devDependencies": {
-		"@prisma/client": "^6.17.1",
+		"@prisma/client": "^6.19.0",
 		"@types/bcrypt": "^5.0.2",
 		"bcrypt": "^5.1.1",
-		"prisma": "^6.17.1",
+		"dotenv": "^17.2.3",
+		"prisma": "^6.19.0",
 		"rimraf": "^6.0.1",
 		"tsx": "^4.20.6",
 		"typescript": "^5.9.3"
@@ -134,9 +135,6 @@
 	"files": [
 		"client"
 	],
-	"prisma": {
-		"seed": "tsx prisma/seed.ts"
-	},
 	"dependencies": {
 		"bcryptjs": "^3.0.2"
 	}

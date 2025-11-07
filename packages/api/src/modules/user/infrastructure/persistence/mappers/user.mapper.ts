@@ -3,11 +3,28 @@ import type { User } from '@scholub/database';
 
 export class UserMapper {
   static toDomain(user: User): UserEntity {
-    return UserEntity.from(user);
+    return UserEntity.from({
+      id: user.id,
+      email: user.email,
+      password: user.password,
+      name: user.name,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
   }
 
   static toDomainSafe(user: User): UserEntitySafe {
-    return UserEntity.from(user);
+    const entity = UserEntity.from({
+      id: user.id,
+      email: user.email,
+      password: user.password,
+      name: user.name,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+    return entity.toSafeUser();
   }
 
   static toDomainList(users: User[]): UserEntity[] {

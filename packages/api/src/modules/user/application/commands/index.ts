@@ -1,4 +1,4 @@
-export * from './google-login';
+export * from './login';
+export * from './register';
 export * from './logout';
 export * from './refresh-token';
-

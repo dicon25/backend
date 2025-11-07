@@ -5,9 +5,15 @@ import { envValidationSchema } from '@/common/validation';
 @Global()
 @Module({ imports: [
   NestConfigModule.forRoot({
-    isGlobal:         true,
-    envFilePath:      '.env',
-    validationSchema: envValidationSchema,
+    isGlobal:    true,
+    envFilePath: [
+      '../../.env', '../../.env.local', '.env', '.env.local',
+    ],
+    validationSchema:  envValidationSchema,
+    validationOptions: {
+      allowUnknown: true,
+      abortEarly:   false,
+    },
   }),
 ] })
 export class ConfigModule {

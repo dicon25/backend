@@ -5,15 +5,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { GoogleLoginHandler, LogoutHandler, RefreshTokenHandler } from './application/commands';
+import { LoginHandler, RegisterHandler, LogoutHandler, RefreshTokenHandler } from './application/commands';
 import { AuthFacade } from './application/facades';
 import { UserDetailHandler, ValidateAccessTokenHandler } from './application/queries';
 import { JwtAuthGuard } from './infrastructure/guards';
 import { UserRepository } from './infrastructure/persistence';
 import { AuthController, UserController } from './presentation/controllers';
-import { GoogleStrategy, JwtStrategy } from './strategy';
+import { JwtStrategy } from './strategy';
 
-const CommandHandlers = [GoogleLoginHandler, LogoutHandler, RefreshTokenHandler];
+const CommandHandlers = [LoginHandler, RegisterHandler, LogoutHandler, RefreshTokenHandler];
 
 const QueryHandlers = [ValidateAccessTokenHandler, UserDetailHandler];
 
@@ -26,7 +26,16 @@ const QueryHandlers = [ValidateAccessTokenHandler, UserDetailHandler];
     RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({ secret: configService.get<string>('JWT_SECRET') }),
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET is not defined in environment variables');
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: '1h' },
+        };
+      },
       inject: [ConfigService],
     }),
   ],
@@ -34,7 +43,6 @@ const QueryHandlers = [ValidateAccessTokenHandler, UserDetailHandler];
     ...CommandHandlers,
     ...QueryHandlers,
     AuthFacade,
-    GoogleStrategy,
     JwtStrategy,
     JwtAuthGuard,
     UserRepository,

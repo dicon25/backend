@@ -1,9 +1,10 @@
 model User {
   id String @id @default(uuid())
 
-  email String @unique
+  email    String @unique
+  password String
 
-  name String?
+  name String
 
   avatarId String? @unique
   avatar   Asset?  @relation("UserAvatar", fields: [avatarId], references: [id])
@@ -19,8 +20,9 @@ model User {
   chatSessions   ChatSession[]
   userActivities UserActivity[]
 
-  discussions        Discussion[]
-  discussionMessages DiscussionMessage[]
+  discussions            Discussion[]
+  discussionMessages     DiscussionMessage[]
+  discussionMessageLikes DiscussionMessageLike[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

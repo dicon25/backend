@@ -16,9 +16,7 @@ export class AuthFacade {
   }
 
   async login(email: string, password: string): Promise<LoginResult> {
-    const command = LoginCommand.from({
-      email, password,
-    });
+    const command = new LoginCommand(email, password);
 
     return this.commandBus.execute<LoginCommand, LoginResult>(command);
   }

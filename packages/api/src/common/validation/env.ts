@@ -17,23 +17,18 @@ export const envValidationSchema = Joi.object({
 
   // Database
   DATABASE_URL: Joi.string().uri()
-    .required(),
+    .default('postgresql://postgres:postgres@localhost:5432/scholub'),
   PRISMA_LOG_LEVEL: Joi.string().valid('query', 'info', 'warn', 'error')
     .default('warn'),
 
   // Redis
   REDIS_URL: Joi.string().uri()
-    .required(),
+    .default('redis://localhost:6379'),
   REDIS_FLUSH_ON_START: Joi.boolean().default(false),
 
   // JWT
   JWT_SECRET: Joi.string().min(32)
-    .required(),
-
-  // Google OAuth
-  GOOGLE_CLIENT_ID: Joi.string().required(),
-  GOOGLE_CLIENT_SECRET: Joi.string().required(),
-  GOOGLE_CALLBACK_URL: Joi.string().uri().required(),
+    .default('dev-jwt-secret-key-change-this-in-production-min-32-chars'),
 
   // CORS
   CORS_ORIGIN: Joi.string().uri()
@@ -54,4 +49,12 @@ export const envValidationSchema = Joi.object({
   // Sentry
   SENTRY_ENABLED: Joi.boolean().default(false),
   SENTRY_DSN:     requiredWhen('SENTRY_ENABLED', Joi.string().uri()),
+
+  // Crawler Secret Key
+  CRAWLER_SECRET_KEY: Joi.string().min(32)
+    .default('dev-crawler-secret-key-change-in-production-min-32-chars'),
+
+  // AI Server Secret Key
+  AI_SERVER_SECRET_KEY: Joi.string().min(32)
+    .default('dev-ai-server-secret-key-change-in-production-min-32-chars'),
 });

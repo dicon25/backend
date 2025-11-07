@@ -1,15 +1,13 @@
-import { AuthProvider, UserStatus } from '@scholub/database';
+import { UserStatus } from '@scholub/database';
 import { DataClass } from 'dataclasses';
 
-export type UserEntitySafe = UserEntity;
+export type UserEntitySafe = Omit<UserEntity, 'password'>;
 
 export class UserEntity extends DataClass {
   id: string;
   email: string;
-  provider: AuthProvider;
-  providerId: string;
-  name?: string;
-  bio?: string;
+  password: string;
+  name: string;
   status: UserStatus;
 
   createdAt: Date;
@@ -24,7 +22,8 @@ export class UserEntity extends DataClass {
   }
 
   toSafeUser(): UserEntitySafe {
-    return this;
+    const { password, ...safeUser } = this;
+    return safeUser as UserEntitySafe;
   }
 }
 

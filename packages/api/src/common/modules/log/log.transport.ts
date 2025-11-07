@@ -1,6 +1,6 @@
-import type { PrismaService } from '@/common/modules/prisma';
 import type { LogLevel, Prisma } from '@scholub/database';
 import TransportStream from 'winston-transport';
+import type { PrismaService } from '@/common/modules/prisma';
 
 type LogTransportOptions = TransportStream.TransportStreamOptions & {
   prisma: PrismaService;
@@ -55,8 +55,6 @@ export class LogTransport extends TransportStream {
           : undefined,
         userId,
         requestId,
-        ip,
-        userAgent,
       } });
     } catch (err) {
       console.error('DB Logging Failed:', err);

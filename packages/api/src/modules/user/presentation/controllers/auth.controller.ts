@@ -1,7 +1,9 @@
 import { ApiResponseType } from '@common/lib/swagger/decorators';
 import {
-    GoogleLoginCommand,
-    GoogleLoginResult,
+    LoginCommand,
+    LoginResult,
+    RegisterCommand,
+    RegisterResult,
     LogoutCommand,
     LogoutResult,
     RefreshTokenCommand,
@@ -9,50 +11,54 @@ import {
 } from '@modules/user/application/commands';
 import { UserEntity } from '@modules/user/domain/entities';
 import { CurrentUser, Public } from '@modules/user/presentation/decorators';
-import { LoginResponseDto, LogoutRequestDto, RefreshTokenRequestDto } from '@modules/user/presentation/dtos';
-import { Body, Controller, Get, Logger, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { LoginDto, RegisterDto, LoginResponseDto, LogoutRequestDto, RefreshTokenRequestDto } from '@modules/user/presentation/dtos';
+import { Body, Controller, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { AuthGuard } from '@nestjs/passport';
-import { ApiTags } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
-
   constructor(private readonly commandBus: CommandBus) {}
 
   @Public()
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  async googleAuth() {
-    // Initiates Google OAuth flow
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponseType({
+    type: LoginResponseDto,
+    description: 'User registration successful',
+    errors: [400, 409, 500],
+  })
+  async register(@Body() dto: RegisterDto): Promise<LoginResponseDto> {
+    const command = new RegisterCommand(dto.email, dto.password, dto.name);
+    const result = await this.commandBus.execute<RegisterCommand, RegisterResult>(command);
+    
+    return LoginResponseDto.from({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
   }
 
   @Public()
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthCallback(@Req() req: Request, @Res() res: Response) {
-    const user = req.user as any;
-
-    const command = GoogleLoginCommand.from({
-      providerId: user.providerId,
-      email: user.email,
-      name: user.name,
-      avatar: user.avatar,
+  @Post('login')
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiResponseType({
+    type: LoginResponseDto,
+    description: 'User login successful',
+    errors: [401, 500],
+  })
+  async login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
+    const command = new LoginCommand(dto.email, dto.password);
+    const result = await this.commandBus.execute<LoginCommand, LoginResult>(command);
+    
+    return LoginResponseDto.from({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     });
-
-    const result = await this.commandBus.execute<GoogleLoginCommand, GoogleLoginResult>(command);
-
-    // Redirect to frontend with tokens
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectUrl = `${frontendUrl}/auth/callback?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
-
-    res.redirect(redirectUrl);
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Logout current user' })
   @ApiResponseType({
     type: 'boolean',
     description: 'User logout successful',
@@ -71,6 +77,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponseType({
     type: LoginResponseDto,
     description: 'Token refresh successful',
