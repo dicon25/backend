@@ -1,4 +1,4 @@
-FROM node:slim AS base
+FROM node:23-bookworm-slim AS base
 
 WORKDIR /app
 
@@ -64,4 +64,4 @@ EXPOSE 8000
 
 USER node
 
-CMD ["pnpm", "--filter", "@rollforming-mes/api", "run", "start:dev"]
+CMD ["pnpm", "--filter", "@scholub/api", "run", "start:dev"]
