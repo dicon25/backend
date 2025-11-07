@@ -1,4 +1,5 @@
 import { IsString, IsArray, IsOptional, IsDateString, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaperDto {
@@ -13,11 +14,31 @@ export class CreatePaperDto {
   title: string;
 
   @ApiProperty({ description: 'Paper categories', type: [String] })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((item: string) => item.trim());
+      }
+    }
+    return Array.isArray(value) ? value : [value];
+  })
   @IsArray()
   @IsString({ each: true })
   categories: string[];
 
   @ApiProperty({ description: 'Paper authors', type: [String] })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((item: string) => item.trim());
+      }
+    }
+    return Array.isArray(value) ? value : [value];
+  })
   @IsArray()
   @IsString({ each: true })
   authors: string[];
@@ -28,6 +49,16 @@ export class CreatePaperDto {
   summary: string;
 
   @ApiProperty({ description: 'Paper content (JSON)' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
   @IsNotEmpty()
   content: any;
 

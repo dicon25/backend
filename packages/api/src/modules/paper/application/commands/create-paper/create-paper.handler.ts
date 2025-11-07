@@ -1,4 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Logger } from '@nestjs/common';
 import { CreatePaperCommand } from './create-paper.command';
 import { PaperRepositoryPort } from '../../../domain/repositories';
 import { PaperEntity } from '../../../domain/entities';
@@ -6,21 +7,29 @@ import { ConflictException } from '@nestjs/common';
 
 @CommandHandler(CreatePaperCommand)
 export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
+  private readonly logger = new Logger(CreatePaperHandler.name);
+
   constructor(private readonly paperRepository: PaperRepositoryPort) {}
 
   async execute(command: CreatePaperCommand): Promise<PaperEntity> {
-    // Check if paper with same DOI or paperId already exists
-    const existingByDoi = await this.paperRepository.findByDoi(command.doi);
+    const checkStart = Date.now();
+    // Check if paper with same DOI or paperId already exists (in parallel)
+    const [existingByDoi, existingByPaperId] = await Promise.all([
+      this.paperRepository.findByDoi(command.doi),
+      this.paperRepository.findByPaperId(command.paperId),
+    ]);
+    this.logger.log(`[CreatePaperHandler] Duplicate check completed in ${Date.now() - checkStart}ms`);
+
     if (existingByDoi) {
       throw new ConflictException('Paper with this DOI already exists');
     }
 
-    const existingByPaperId = await this.paperRepository.findByPaperId(command.paperId);
     if (existingByPaperId) {
       throw new ConflictException('Paper with this Paper ID already exists');
     }
 
-    return await this.paperRepository.create({
+    const createStart = Date.now();
+    const result = await this.paperRepository.create({
       paperId: command.paperId,
       title: command.title,
       categories: command.categories,
@@ -37,6 +46,8 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
       unlikeCount: 0,
       totalViewCount: 0,
     } as Partial<PaperEntity>);
+    this.logger.log(`[CreatePaperHandler] Paper creation completed in ${Date.now() - createStart}ms`);
+    return result;
   }
 }
 

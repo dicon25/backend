@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  Logger,
   Param,
   Post,
   UploadedFiles,
@@ -32,6 +33,8 @@ import { CreatePaperDto, PaperDetailDto } from '../dtos';
 @Public()
 @UseGuards(CrawlerAuthGuard)
 export class PaperCrawlerController {
+  private readonly logger = new Logger(PaperCrawlerController.name);
+
   constructor(private readonly paperFacade: PaperFacade,
     private readonly assetFacade: AssetFacade) {
   }
@@ -95,27 +98,86 @@ export class PaperCrawlerController {
   @ApiResponseType({ type: PaperDetailDto })
   async createPaper(@Body() dto: CreatePaperDto,
     @UploadedFiles() files?: {
-      pdf?: Express.Multer.File[]; thumbnail?: Express.Multer.File[];
+      pdf?:       Express.Multer.File[];
+      thumbnail?: Express.Multer.File[];
     }) {
+    const startTime = Date.now();
+
+    this.logger.log(`[createPaper] Starting - paperId: ${dto.paperId}`);
+
     let pdfId = dto.pdfId;
     let thumbnailId = dto.thumbnailId;
 
-    // Upload PDF file if provided
-    if (files?.pdf && files.pdf.length > 0 && !pdfId) {
-      const assetResult = await this.assetFacade.uploadAsset(files.pdf[0], 'papers');
+    // Validate existing asset IDs if provided
+    if (pdfId && (!files?.pdf || files.pdf.length === 0)) {
+      const checkStart = Date.now();
+      const existsResult = await this.assetFacade.checkAssetExists(pdfId);
 
-      pdfId = assetResult.id;
+      this.logger.log(`[createPaper] PDF asset check completed in ${Date.now() - checkStart}ms`);
+
+      if (!existsResult.exists) {
+        throw new BadRequestException(`PDF asset with id '${pdfId}' does not exist`);
+      }
+    }
+
+    if (thumbnailId && (!files?.thumbnail || files.thumbnail.length === 0)) {
+      const checkStart = Date.now();
+      const existsResult = await this.assetFacade.checkAssetExists(thumbnailId);
+
+      this.logger.log(`[createPaper] Thumbnail asset check completed in ${Date.now() - checkStart}ms`);
+
+      if (!existsResult.exists) {
+        throw new BadRequestException(`Thumbnail asset with id '${thumbnailId}' does not exist`);
+      }
+    }
+
+    // Upload files in parallel if both are provided
+    const uploadPromises: Promise<void>[] = [];
+
+    if (files?.pdf && files.pdf.length > 0 && !pdfId) {
+      const pdfUploadStart = Date.now();
+      const pdfFile = files.pdf[0];
+
+      uploadPromises.push(this.assetFacade.uploadAsset(pdfFile, 'papers')
+        .then(result => {
+          pdfId = result.id;
+
+          this.logger.log(`[createPaper] PDF upload completed in ${Date.now() - pdfUploadStart}ms - size: ${pdfFile.size} bytes`);
+        })
+        .catch(err => {
+          this.logger.error(`[createPaper] PDF upload failed: ${err.message}`, err.stack);
+
+          throw err;
+        }));
+    }
+
+    if (files?.thumbnail && files.thumbnail.length > 0 && !thumbnailId) {
+      const thumbnailUploadStart = Date.now();
+      const thumbnailFile = files.thumbnail[0];
+
+      uploadPromises.push(this.assetFacade.uploadAsset(thumbnailFile, 'thumbnails')
+        .then(result => {
+          thumbnailId = result.id;
+
+          this.logger.log(`[createPaper] Thumbnail upload completed in ${Date.now() - thumbnailUploadStart}ms - size: ${thumbnailFile.size} bytes`);
+        })
+        .catch(err => {
+          this.logger.error(`[createPaper] Thumbnail upload failed: ${err.message}`, err.stack);
+
+          throw err;
+        }));
+    }
+
+    if (uploadPromises.length > 0) {
+      const uploadStart = Date.now();
+
+      await Promise.all(uploadPromises);
+
+      this.logger.log(`[createPaper] All file uploads completed in ${Date.now() - uploadStart}ms`);
     }
 
     if (!pdfId) {
       throw new BadRequestException('Either pdfId or pdf file must be provided');
-    }
-
-    // Upload thumbnail file if provided
-    if (files?.thumbnail && files.thumbnail.length > 0 && !thumbnailId) {
-      const assetResult = await this.assetFacade.uploadAsset(files.thumbnail[0], 'thumbnails');
-
-      thumbnailId = assetResult.id;
     }
 
     const command = new CreatePaperCommand(
@@ -133,7 +195,14 @@ export class PaperCrawlerController {
       thumbnailId,
     );
 
-    return await this.paperFacade.createPaper(command);
+    const createStart = Date.now();
+    const result = await this.paperFacade.createPaper(command);
+
+    this.logger.log(`[createPaper] Paper creation completed in ${Date.now() - createStart}ms`);
+
+    this.logger.log(`[createPaper] Total time: ${Date.now() - startTime}ms`);
+
+    return result;
   }
 
   @Delete(':paperId')

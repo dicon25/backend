@@ -10,6 +10,7 @@ import { SentryExceptionCaptured } from '@sentry/nestjs';
 import type { Request, Response } from 'express';
 import { APIResponseDto, type HttpMethod } from '../dto/response.dto';
 import { LogService } from '../modules/log/log.service';
+import { isLocal } from '../utils';
 
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class PrismaExceptionFilter implements ExceptionFilter {
@@ -99,10 +100,15 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
     response.status(apiResponse.status).json(apiResponse);
 
-    this.logDetailedError(exception, request);
+    this.logDetailedError(exception, request, details, status);
   }
 
-  private logDetailedError(exception: Prisma.PrismaClientKnownRequestError, request: Request) {
+  private logDetailedError(
+    exception: Prisma.PrismaClientKnownRequestError,
+    request: Request,
+    details: string,
+    status: number,
+  ) {
     const timestamp = Temporal.Now.instant().toString();
 
     const errorDetails = {
@@ -123,7 +129,33 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       },
     };
 
+    // Log to database
     this.logger.error('PrismaException',
       `🚨 Prisma Exception Log\n${JSON.stringify(errorDetails, null, 2)}`);
+
+    // Console output for local development
+    if (isLocal()) {
+      console.error('\n' + '='.repeat(80));
+      console.error(`🚨 [${exception.name}] ${exception.message}`);
+      console.error(`📋 Error Code: ${exception.code}`);
+      console.error(`📝 Details: ${details}`);
+      console.error('='.repeat(80));
+      console.error(`📍 ${request.method} ${request.url}`);
+      console.error(`🔢 Status: ${status}`);
+      console.error('─'.repeat(80));
+      console.error('📚 Exception Details:');
+      console.error(JSON.stringify({
+        code: exception.code,
+        message: exception.message,
+        meta: exception.meta,
+      }, null, 2));
+      console.error('─'.repeat(80));
+      console.error('📚 Stack Trace:');
+      console.error(exception.stack);
+      console.error('─'.repeat(80));
+      console.error('📦 Request Body:');
+      console.error(JSON.stringify(request.body, null, 2));
+      console.error('='.repeat(80) + '\n');
+    }
   }
 }

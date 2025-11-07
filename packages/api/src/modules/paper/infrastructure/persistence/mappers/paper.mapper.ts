@@ -37,11 +37,14 @@ export class PaperMapper {
       url: entity.url,
       pdfUrl: entity.pdfUrl,
       issuedAt: entity.issuedAt,
-      thumbnailId: entity.thumbnailId,
     };
 
     if (entity.pdfId) {
       data.pdf = { connect: { id: entity.pdfId } };
+    }
+
+    if (entity.thumbnailId) {
+      data.thumbnail = { connect: { id: entity.thumbnailId } };
     }
 
     return data;
