@@ -7,6 +7,7 @@ import { AiServerAuthGuard } from '@/common/guards';
 import { ConfigModule } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiSecurity, ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsNumber, IsDateString, Min } from 'class-validator';
+import { Public } from '@/modules/user/presentation/decorators';
 import { Type } from 'class-transformer';
 
 // DTOs
@@ -145,8 +146,9 @@ export class AnalyticsService {
 
 // Controller
 @ApiTags('AI Data')
-@ApiSecurity('X-Secret-Key')
+@ApiSecurity('bearer')
 @Controller('ai-data')
+@Public()
 @UseGuards(AiServerAuthGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}

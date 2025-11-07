@@ -28,6 +28,7 @@ import { PaperRelationController } from './presentation/controllers/paper-relati
 // Guards
 import { CrawlerAuthGuard } from '@/common/guards';
 import { UserModule } from '../user/user.module';
+import { AssetModule } from '../asset';
 
 const commandHandlers = [CreatePaperHandler, DeletePaperHandler];
 
@@ -39,7 +40,7 @@ const queryHandlers = [
 ];
 
 @Module({
-  imports: [CqrsModule, PrismaModule, ConfigModule, UserModule],
+  imports: [CqrsModule, PrismaModule, ConfigModule, UserModule, AssetModule],
   providers: [
     ...commandHandlers,
     ...queryHandlers,

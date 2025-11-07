@@ -4,6 +4,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '@/common/modules/redis';
 import { PrismaService } from '@/common/modules/prisma';
+import { JwtPayload } from '@modules/user/domain/types/jwt-payload.type';
 import * as bcrypt from 'bcryptjs';
 
 export interface LoginResult {
@@ -42,18 +43,22 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
     }
 
     // Generate tokens
-    const accessToken = this.jwtService.sign(
-      { id: user.id, email: user.email },
-      { expiresIn: '1h' },
-    );
+    const accessTokenPayload: JwtPayload = {
+      sub: user.id,
+      type: 'access',
+    };
 
-    const refreshToken = this.jwtService.sign(
-      { id: user.id, email: user.email },
-      { expiresIn: '7d' },
-    );
+    const refreshTokenPayload: JwtPayload = {
+      sub: user.id,
+      type: 'refresh',
+    };
 
-    // Store refresh token in Redis
-    await this.redisService.set(`refresh_token:${user.id}`, refreshToken, 7 * 24 * 60 * 60);
+    const accessToken = this.jwtService.sign(accessTokenPayload, { expiresIn: '1h' });
+    const refreshToken = this.jwtService.sign(refreshTokenPayload, { expiresIn: '7d' });
+
+    // Store refresh token in Redis Set
+    await this.redisService.sadd(`refresh:${user.id}`, refreshToken);
+    await this.redisService.expire(`refresh:${user.id}`, 7 * 24 * 60 * 60);
 
     return {
       accessToken,

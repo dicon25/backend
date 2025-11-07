@@ -45,6 +45,7 @@ export const envValidationSchema = Joi.object({
   S3_SECRET_ACCESS_KEY: requiredWhen('S3_ENABLED'),
   S3_BUCKET_NAME:       requiredWhen('S3_ENABLED'),
   S3_ENDPOINT:          requiredWhen('S3_ENABLED'),
+  S3_PUBLIC_URL:        requiredWhen('S3_ENABLED', Joi.string().uri()),
 
   // Sentry
   SENTRY_ENABLED: Joi.boolean().default(false),

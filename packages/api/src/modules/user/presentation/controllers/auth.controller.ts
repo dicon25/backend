@@ -12,9 +12,11 @@ import {
 import { UserEntity } from '@modules/user/domain/entities';
 import { CurrentUser, Public } from '@modules/user/presentation/decorators';
 import { LoginDto, RegisterDto, LoginResponseDto, LogoutRequestDto, RefreshTokenRequestDto } from '@modules/user/presentation/dtos';
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CommandBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { getMulterS3Uploader } from '@common/modules/s3/s3.config';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -23,14 +25,49 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @UseInterceptors(FileInterceptor('profilePicture', getMulterS3Uploader({
+    extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+    maxSize: 5 * 1024 * 1024, // 5MB
+  })))
   @ApiOperation({ summary: 'Register a new user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          format: 'email',
+          example: 'user@example.com',
+        },
+        password: {
+          type: 'string',
+          minLength: 6,
+          example: 'password123',
+        },
+        name: {
+          type: 'string',
+          example: 'John Doe',
+        },
+        profilePicture: {
+          type: 'string',
+          format: 'binary',
+          description: 'Profile picture image file (optional)',
+        },
+      },
+      required: ['email', 'password', 'name'],
+    },
+  })
   @ApiResponseType({
     type: LoginResponseDto,
     description: 'User registration successful',
     errors: [400, 409, 500],
   })
-  async register(@Body() dto: RegisterDto): Promise<LoginResponseDto> {
-    const command = new RegisterCommand(dto.email, dto.password, dto.name);
+  async register(
+    @Body() dto: RegisterDto,
+    @UploadedFile() profilePicture?: Express.Multer.File,
+  ): Promise<LoginResponseDto> {
+    const command = new RegisterCommand(dto.email, dto.password, dto.name, profilePicture);
     const result = await this.commandBus.execute<RegisterCommand, RegisterResult>(command);
     
     return LoginResponseDto.from({

@@ -10,7 +10,10 @@ export class UserRepository implements UserRepositoryPort {
   }
 
   async findById(id: string): Promise<UserEntitySafe | null> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { avatar: true },
+    });
 
     if (!user) {
       return null;

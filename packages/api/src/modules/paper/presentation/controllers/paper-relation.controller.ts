@@ -4,6 +4,7 @@ import { CrawlerAuthGuard } from '@/common/guards';
 import { PrismaService } from '@/common/modules/prisma';
 import { IsString, IsNotEmpty, IsEnum, IsOptional, IsNumber } from 'class-validator';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { Public } from '@/modules/user/presentation/decorators';
 import { Type } from 'class-transformer';
 
 // DTOs
@@ -44,7 +45,8 @@ export class PaperRelationController {
   // Crawler/AI Server endpoint
   @Post('crawler/papers/:paperId/relations')
   @ApiOperation({ summary: 'Create paper relation (crawler/AI server only)' })
-  @ApiSecurity('X-Secret-Key')
+  @ApiSecurity('bearer')
+  @Public()
   @UseGuards(CrawlerAuthGuard)
   async createRelation(@Param('paperId') paperId: string, @Body() dto: CreateRelationDto) {
     const paper = await this.prisma.paper.findUnique({ where: { paperId } });

@@ -33,7 +33,7 @@ const queryHandlers = [
     AssetRepository,
   ],
   controllers: [AssetController],
-  exports:     [AssetFacade],
+  exports:     [AssetFacade, AssetRepository],
 })
 export class AssetModule {
 }

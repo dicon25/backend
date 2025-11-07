@@ -36,10 +36,10 @@ export class CreatePaperDto {
   @IsNotEmpty()
   doi: string;
 
-  @ApiProperty({ description: 'PDF Asset ID' })
+  @ApiProperty({ description: 'PDF Asset ID (optional if pdf file is uploaded)', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  pdfId: string;
+  pdfId?: string;
 
   @ApiProperty({ description: 'Paper URL', required: false })
   @IsOptional()

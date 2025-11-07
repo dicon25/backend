@@ -1,7 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
-import { diskStorage } from 'multer';
-import { v4 as uuidv4 } from 'uuid';
+import { memoryStorage } from 'multer';
 
 export function getMulterS3Uploader(options: {
   extensions?: string[];
@@ -11,10 +10,7 @@ export function getMulterS3Uploader(options: {
   const allowedExts = options.extensions?.map(ext => ext.toLowerCase());
 
   return {
-    storage: diskStorage({
-      destination: './tmp',
-      filename:    (req, file, cb) => cb(null, uuidv4()),
-    }),
+    storage: memoryStorage(),
     limits:     { fileSize: options.maxSize ?? undefined },
     fileFilter: (_, file, cb) => {
       const ext = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));

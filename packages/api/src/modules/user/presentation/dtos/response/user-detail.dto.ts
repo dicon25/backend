@@ -28,6 +28,12 @@ export class UserDetailResponseDto extends DataClass {
   })
   status: UserStatus;
 
+  @ApiPropertyOptional({
+    description: 'The profile image URL of the user',
+    example:     'https://example.com/avatars/123.jpg',
+  })
+  profileImageUrl?: string;
+
   @ApiProperty({
     description: 'The created at of the user',
     example:     '2021-01-01T00:00:00.000Z',

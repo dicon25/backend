@@ -34,6 +34,7 @@ interface PresignedUrlOptions {
 export class S3Service {
   private readonly bucket = process.env.S3_BUCKET_NAME || '';
   private readonly endpoint = process.env.S3_ENDPOINT || '';
+  private readonly publicUrl = process.env.S3_PUBLIC_URL || '';
 
   constructor(@Inject('S3_CLIENT') private readonly s3: S3Client,
     private readonly logger: LogService) {
@@ -138,6 +139,14 @@ export class S3Service {
   }
 
   getPublicUrl(key: string): string {
+    if (this.publicUrl) {
+      if (this.publicUrl.endsWith('/')) {
+        return `${this.publicUrl}${key}`;
+      }
+      return `${this.publicUrl}/${key}`;
+    }
+
+    // Fallback to endpoint if publicUrl is not set
     if (this.endpoint.endsWith('/')) {
       return `${this.endpoint}${this.bucket}/${key}`;
     }

@@ -3,6 +3,7 @@ export class RegisterCommand {
     public readonly email: string,
     public readonly password: string,
     public readonly name: string,
+    public readonly profilePicture?: Express.Multer.File,
   ) {}
 }
 
