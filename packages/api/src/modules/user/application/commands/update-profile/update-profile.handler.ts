@@ -18,7 +18,6 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
   }
 
   async execute(command: UpdateProfileCommand): Promise<UpdateProfileResult> {
-    // Find user with avatar
     const existingUser = await this.prisma.user.findUnique({
       where:   { id: command.userId },
       include: { avatar: true },
@@ -32,7 +31,6 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
 
     const oldAvatarId = existingUser.avatarId;
 
-    // Upload new profile picture if provided
     if (command.profilePicture) {
       const key = await this.s3Service.upload({
         file:      command.profilePicture.buffer,
@@ -51,20 +49,17 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
 
       avatarId = asset.id;
 
-      // Delete old avatar if exists
       if (oldAvatarId && existingUser.avatar) {
         try {
           await this.s3Service.delete(existingUser.avatar.key);
 
           await this.assetRepository.delete(oldAvatarId);
         } catch (error) {
-          // Log error but don't fail the update
           console.error('Failed to delete old avatar:', error);
         }
       }
     }
 
-    // Update user
     const updateData: {
       name?: string; avatarId?: string;
     } = {};

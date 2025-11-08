@@ -8,10 +8,8 @@ import { ValidateAccessTokenQuery, ValidateAccessTokenResult } from '../applicat
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly queryBus: QueryBus,
-  ) {
+  constructor(private readonly configService: ConfigService,
+    private readonly queryBus: QueryBus) {
     super({
       jwtFromRequest:    ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration:  false,

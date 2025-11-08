@@ -1,7 +1,7 @@
-import { PrismaService } from '@/common/modules/prisma';
-import { UserEntity, UserEntitySafe } from '@modules/user/domain/entities/user.entity';
+import { UserEntity, UserEntitySafe } from '@modules/user/domain';
 import { UserRepositoryPort } from '@modules/user/domain/repositories/user.repository.port';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '@/common/modules/prisma';
 import { UserMapper } from '../mappers';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class UserRepository implements UserRepositoryPort {
 
   async findById(id: string): Promise<UserEntitySafe | null> {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where:   { id },
       include: { avatar: true },
     });
 
