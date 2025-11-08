@@ -1,27 +1,36 @@
-import { PrismaService } from '@/common/modules/prisma/prisma.service';
-import { Public } from '@/modules/user/presentation/decorators';
-import { RedisHealthIndicator } from '@liaoliaots/nestjs-redis-health'; // Redis HealthIndicator
+import { RedisHealthIndicator } from '@liaoliaots/nestjs-redis-health';
 import { Controller, Get } from '@nestjs/common';
 import {
   HealthCheck,
   HealthCheckService,
+  HealthIndicatorResult,
   HttpHealthIndicator,
-  PrismaHealthIndicator,
 } from '@nestjs/terminus';
-import { PrismaClient } from '@scholub/database';
 import Redis from 'ioredis';
+import { PrismaService } from '@/common/modules/prisma/prisma.service';
+import { Public } from '@/modules/user/presentation/decorators';
 
 @Controller()
 export class HealthController {
   private readonly redis: Redis;
-  constructor(
-    private healthIndicator: HealthCheckService,
+  constructor(private healthIndicator: HealthCheckService,
     private httpIndicator: HttpHealthIndicator,
-    private prismaIndicator: PrismaHealthIndicator,
     private redisIndicator: RedisHealthIndicator,
-    private readonly prismaService: PrismaService,
-  ) {
-    this.redis =  new Redis(process.env.REDIS_URL ?? '');
+    private readonly prismaService: PrismaService) {
+    this.redis = new Redis(process.env.REDIS_URL ?? '');
+  }
+
+  private async checkPrisma(): Promise<HealthIndicatorResult> {
+    try {
+      await this.prismaService.$queryRaw`SELECT 1`;
+
+      return { postgres: { status: 'up' } };
+    } catch (error) {
+      return { postgres: {
+        status:  'down',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      } };
+    }
   }
 
   @Public()
@@ -30,9 +39,10 @@ export class HealthController {
   check() {
     return this.healthIndicator.check([
       () => this.httpIndicator.pingCheck('google', 'https://google.com'),
-      () => this.prismaIndicator.pingCheck('postgres', this.prismaService as PrismaClient),
+      () => this.checkPrisma(),
       () => this.redisIndicator.checkHealth('redis', {
-        type: 'redis', client: this.redis,
+        type:   'redis',
+        client: this.redis,
       }),
     ]);
   }
