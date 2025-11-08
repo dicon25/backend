@@ -1,4 +1,4 @@
-FROM node:23-bookworm-slim AS base
+FROM node:20-bookworm-slim AS base
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ RUN pnpm database generate
 
 RUN pnpm api build
 
-FROM node:23-bookworm-slim AS production
+FROM node:20-bookworm-slim AS production
 
 WORKDIR /app
 
