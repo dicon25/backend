@@ -1,8 +1,7 @@
 import { PaperListOptions } from '../../../domain/repositories';
 
 export class ListPapersQuery {
-  constructor(public readonly options: PaperListOptions) {}
+  constructor(public readonly options: PaperListOptions) {
+  }
 }
-
-
 

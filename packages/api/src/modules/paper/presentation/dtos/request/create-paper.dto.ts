@@ -1,6 +1,12 @@
-import { IsString, IsArray, IsOptional, IsDateString, IsNotEmpty } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import {
+  IsArray,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreatePaperDto {
   @ApiProperty({ description: 'Paper ID' })
@@ -13,7 +19,9 @@ export class CreatePaperDto {
   @IsNotEmpty()
   title: string;
 
-  @ApiProperty({ description: 'Paper categories', type: [String] })
+  @ApiProperty({
+    description: 'Paper categories', type: [String],
+  })
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       try {
@@ -22,13 +30,16 @@ export class CreatePaperDto {
         return value.split(',').map((item: string) => item.trim());
       }
     }
+
     return Array.isArray(value) ? value : [value];
   })
   @IsArray()
   @IsString({ each: true })
   categories: string[];
 
-  @ApiProperty({ description: 'Paper authors', type: [String] })
+  @ApiProperty({
+    description: 'Paper authors', type: [String],
+  })
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       try {
@@ -37,6 +48,7 @@ export class CreatePaperDto {
         return value.split(',').map((item: string) => item.trim());
       }
     }
+
     return Array.isArray(value) ? value : [value];
   })
   @IsArray()
@@ -57,6 +69,7 @@ export class CreatePaperDto {
         return value;
       }
     }
+
     return value;
   })
   @IsNotEmpty()
@@ -67,63 +80,79 @@ export class CreatePaperDto {
   @IsNotEmpty()
   doi: string;
 
-  @ApiProperty({ description: 'PDF Asset ID (optional if pdf file is uploaded)', required: false })
+  @ApiProperty({
+    description: 'PDF Asset ID (optional if pdf file is uploaded)', required: false,
+  })
   @IsOptional()
   @IsString()
   pdfId?: string;
 
-  @ApiProperty({ description: 'Paper URL', required: false })
+  @ApiProperty({
+    description: 'Paper URL', required: false,
+  })
   @IsOptional()
   @IsString()
   url?: string;
 
-  @ApiProperty({ description: 'PDF URL', required: false })
+  @ApiProperty({
+    description: 'PDF URL', required: false,
+  })
   @IsOptional()
   @IsString()
   pdfUrl?: string;
 
-  @ApiProperty({ description: 'Issued date', required: false })
+  @ApiProperty({
+    description: 'Issued date', required: false,
+  })
   @IsOptional()
   @IsDateString()
   issuedAt?: string;
 
-  @ApiProperty({ description: 'Thumbnail Asset ID', required: false })
+  @ApiProperty({
+    description: 'Thumbnail Asset ID', required: false,
+  })
   @IsOptional()
   @IsString()
   thumbnailId?: string;
 
-  @ApiProperty({ description: 'Hashtags (not exposed in API responses)', type: [String], required: false })
+  @ApiProperty({
+    description: 'Hashtags (not exposed in API responses)', type: [String], required: false,
+  })
   @IsOptional()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       try {
         return JSON.parse(value);
       } catch {
-        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+        return value.split(',').map((item: string) => item.trim())
+          .filter(Boolean);
       }
     }
+
     return Array.isArray(value) ? value : [];
   })
   @IsArray()
   @IsString({ each: true })
   hashtags?: string[];
 
-  @ApiProperty({ description: 'User IDs who should receive this paper as recommendation', type: [String], required: false })
+  @ApiProperty({
+    description: 'User IDs who should receive this paper as recommendation', type: [String], required: false,
+  })
   @IsOptional()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       try {
         return JSON.parse(value);
       } catch {
-        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+        return value.split(',').map((item: string) => item.trim())
+          .filter(Boolean);
       }
     }
+
     return Array.isArray(value) ? value : [];
   })
   @IsArray()
   @IsString({ each: true })
   interestedUserIds?: string[];
 }
-
-
 

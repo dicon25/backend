@@ -1,6 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, Min } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 // Request DTOs
 export class CreateDiscussionDto {
@@ -30,14 +36,18 @@ export class UpdateMessageDto {
 }
 
 export class ListDto {
-  @ApiProperty({ description: 'Page number', default: 1, required: false })
+  @ApiProperty({
+    description: 'Page number', default: 1, required: false,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number = 1;
 
-  @ApiProperty({ description: 'Items per page', default: 20, required: false })
+  @ApiProperty({
+    description: 'Items per page', default: 20, required: false,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -131,6 +141,4 @@ export class PaginatedMessagesDto {
   @ApiProperty()
   limit: number;
 }
-
-
 

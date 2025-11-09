@@ -2,9 +2,9 @@ import { DiscussionEntity } from '../entities';
 
 export interface PaginatedDiscussions {
   discussions: DiscussionEntity[];
-  total: number;
-  page: number;
-  limit: number;
+  total:       number;
+  page:        number;
+  limit:       number;
 }
 
 export abstract class DiscussionRepositoryPort {
@@ -17,6 +17,4 @@ export abstract class DiscussionRepositoryPort {
   ): Promise<PaginatedDiscussions>;
   abstract updateCounts(discussionId: string): Promise<void>;
 }
-
-
 

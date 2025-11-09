@@ -63,9 +63,9 @@ export class PaperDetailDto {
   @ApiProperty()
   updatedAt: Date;
 
-  @ApiProperty({ type: MyReactionDto, required: false })
+  @ApiProperty({
+    type: MyReactionDto, required: false,
+  })
   myReaction?: MyReactionDto;
 }
-
-
 

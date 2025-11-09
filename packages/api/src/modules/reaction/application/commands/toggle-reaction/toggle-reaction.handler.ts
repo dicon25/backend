@@ -1,24 +1,23 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { ToggleReactionCommand } from './toggle-reaction.command';
-import { ReactionRepositoryPort } from '../../../domain/repositories';
 import { PrismaService } from '@/common/modules/prisma';
 import { ReactionType } from '../../../domain/entities';
+import { ReactionRepositoryPort } from '../../../domain/repositories';
+import { ToggleReactionCommand } from './toggle-reaction.command';
 
 @CommandHandler(ToggleReactionCommand)
 export class ToggleReactionHandler implements ICommandHandler<ToggleReactionCommand> {
-  constructor(
-    private readonly reactionRepository: ReactionRepositoryPort,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly reactionRepository: ReactionRepositoryPort,
+    private readonly prisma: PrismaService) {
+  }
 
-  async execute(command: ToggleReactionCommand): Promise<{ action: 'created' | 'deleted' }> {
-    return await this.prisma.$transaction(async (tx) => {
+  async execute(command: ToggleReactionCommand): Promise<{
+    action: 'created' | 'deleted';
+  }> {
+    return await this.prisma.$transaction(async tx => {
       // Check if the same reaction exists
-      const existingReaction = await this.reactionRepository.findByUserAndPaper(
-        command.userId,
+      const existingReaction = await this.reactionRepository.findByUserAndPaper(command.userId,
         command.paperId,
-        command.type,
-      );
+        command.type);
 
       if (existingReaction) {
         // Delete existing reaction (toggle off)
@@ -26,9 +25,10 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
 
         // Update paper count
         const field = command.type === ReactionType.LIKE ? 'likeCount' : 'unlikeCount';
+
         await tx.paper.update({
           where: { id: command.paperId },
-          data: { [field]: { decrement: 1 } },
+          data:  { [field]: { decrement: 1 } },
         });
 
         return { action: 'deleted' };
@@ -36,11 +36,10 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
 
       // Check if opposite reaction exists
       const oppositeType = command.type === ReactionType.LIKE ? ReactionType.UNLIKE : ReactionType.LIKE;
-      const oppositeReaction = await this.reactionRepository.findByUserAndPaper(
-        command.userId,
+
+      const oppositeReaction = await this.reactionRepository.findByUserAndPaper(command.userId,
         command.paperId,
-        oppositeType,
-      );
+        oppositeType);
 
       if (oppositeReaction) {
         // Delete opposite reaction
@@ -48,9 +47,10 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
 
         // Decrement opposite count
         const oppositeField = oppositeType === ReactionType.LIKE ? 'likeCount' : 'unlikeCount';
+
         await tx.paper.update({
           where: { id: command.paperId },
-          data: { [oppositeField]: { decrement: 1 } },
+          data:  { [oppositeField]: { decrement: 1 } },
         });
       }
 
@@ -59,24 +59,21 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
 
       // Increment count
       const field = command.type === ReactionType.LIKE ? 'likeCount' : 'unlikeCount';
+
       await tx.paper.update({
         where: { id: command.paperId },
-        data: { [field]: { increment: 1 } },
+        data:  { [field]: { increment: 1 } },
       });
 
       // Create user activity
-      await tx.userActivity.create({
-        data: {
-          userId: command.userId,
-          paperId: command.paperId,
-          type: 'REACT',
-        },
-      });
+      await tx.userActivity.create({ data: {
+        userId:  command.userId,
+        paperId: command.paperId,
+        type:    'REACT',
+      } });
 
       return { action: 'created' };
     });
   }
 }
-
-
 

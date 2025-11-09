@@ -1,13 +1,13 @@
-import { ChatSessionEntity, ChatMessageEntity } from '../entities/chat.entities';
+import { ChatMessageEntity, ChatSessionEntity } from '../entities/chat.entities';
 
 export interface PaginatedSessions {
   sessions: ChatSessionEntity[];
-  total: number;
+  total:    number;
 }
 
 export interface PaginatedMessages {
   messages: ChatMessageEntity[];
-  total: number;
+  total:    number;
 }
 
 export abstract class ChatRepositoryPort {
@@ -26,6 +26,4 @@ export abstract class ChatRepositoryPort {
     limit: number,
   ): Promise<PaginatedMessages>;
 }
-
-
 

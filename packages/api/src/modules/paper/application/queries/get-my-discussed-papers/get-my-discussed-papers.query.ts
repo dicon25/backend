@@ -1,6 +1,5 @@
 export class GetMyDiscussedPapersQuery {
-  constructor(
-    public readonly userId: string,
-  ) {}
+  constructor(public readonly userId: string) {
+  }
 }
 

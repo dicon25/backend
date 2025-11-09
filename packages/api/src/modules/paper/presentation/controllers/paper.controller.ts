@@ -11,6 +11,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { User } from '@scholub/database';
 import { Request } from 'express';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { PrismaService } from '@/common/modules/prisma';
 import { AssetFacade } from '@/modules/asset/application/facades';
 import { PaperFacade } from '@/modules/paper/application/facades';
 import { PaperEntity } from '@/modules/paper/domain/entities';
@@ -21,6 +22,7 @@ import {
   ListPapersDto,
   PaperDetailDto,
   PaperListDto,
+  PaperListItemDto,
 } from '../dtos';
 import { RecordPaperViewResponseDto } from '../dtos/response/record-paper-view-response.dto';
 
@@ -28,7 +30,8 @@ import { RecordPaperViewResponseDto } from '../dtos/response/record-paper-view-r
 @Controller('papers')
 export class PaperController {
   constructor(private readonly paperFacade: PaperFacade,
-    private readonly assetFacade: AssetFacade) {
+    private readonly assetFacade: AssetFacade,
+    private readonly prisma: PrismaService) {
   }
 
   @Get('categories')
@@ -50,7 +53,9 @@ export class PaperController {
     description: '특정 카테고리에 속한 논문 목록을 페이지네이션과 정렬 옵션을 사용하여 조회합니다. URL 파라미터로 카테고리를 지정하며, 쿼리 파라미터로 페이지 번호, 페이지당 항목 수, 정렬 기준 및 정렬 순서를 지정할 수 있습니다.',
   })
   @ApiResponseType({ type: PaperListDto })
-  async listPapersByCategory(@Param('category') category: string, @Query() query: ListPapersDto) {
+  async listPapersByCategory(@Param('category') category: string, @Query() query: ListPapersDto, @Req() req: Request & {
+    user?: User;
+  }) {
     const result = await this.paperFacade.listPapersByCategory(category, {
       page:      query.page ?? 1,
       limit:     query.limit ?? 20,
@@ -58,7 +63,7 @@ export class PaperController {
       sortOrder: query.sortOrder,
     });
 
-    const papers = await this.mapPapersToDto(result.papers);
+    const papers = await this.mapPapersToListItemDto(result.papers, req.user?.id);
 
     return {
       papers,
@@ -76,13 +81,15 @@ export class PaperController {
     description: '헤드라인 논문 목록을 조회합니다. 최근 7일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 4개입니다.',
   })
   @ApiResponseType({
-    type:    PaperDetailDto,
+    type:    PaperListItemDto,
     isArray: true,
   })
-  async getHeadlinePapers(@Query('limit') limit?: number) {
+  async getHeadlinePapers(@Req() req: Request & {
+    user?: User;
+  }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
 
-    return await this.mapPapersToDto(papers);
+    return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
   @Get('popular')
@@ -92,13 +99,15 @@ export class PaperController {
     description: '인기 논문 목록을 조회합니다. 최근 90일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 20개입니다.',
   })
   @ApiResponseType({
-    type:    PaperDetailDto,
+    type:    PaperListItemDto,
     isArray: true,
   })
-  async getPopularPapers(@Query('limit') limit?: number, @Query('days') days?: number) {
+  async getPopularPapers(@Req() req: Request & {
+    user?: User;
+  }, @Query('limit') limit?: number, @Query('days') days?: number) {
     const papers = await this.paperFacade.getPopularPapers(limit ?? 20, days ?? 90);
 
-    return await this.mapPapersToDto(papers);
+    return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
   @Get('latest')
@@ -108,13 +117,15 @@ export class PaperController {
     description: '최신 연구 논문 목록을 조회합니다. 발행일(issuedAt) 기준으로 최신순으로 정렬하며, 발행일이 없는 경우 생성일(createdAt) 기준으로 정렬합니다. 기본값은 20개입니다.',
   })
   @ApiResponseType({
-    type:    PaperDetailDto,
+    type:    PaperListItemDto,
     isArray: true,
   })
-  async getLatestPapers(@Query('limit') limit?: number) {
+  async getLatestPapers(@Req() req: Request & {
+    user?: User;
+  }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getLatestPapers(limit ?? 20);
 
-    return await this.mapPapersToDto(papers);
+    return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
   private async mapPapersToDto(papers: PaperEntity[]): Promise<PaperDetailDto[]> {
@@ -169,6 +180,93 @@ export class PaperController {
     };
   }
 
+  private async mapPapersToListItemDto(papers: PaperEntity[], userId?: string): Promise<PaperListItemDto[]> {
+    if (papers.length === 0) {
+      return [];
+    }
+
+    const thumbnailIds = papers
+      .map(p => p.thumbnailId)
+      .filter((id): id is string => id !== undefined);
+
+    const paperIds = papers.map(p => p.id);
+    const thumbnailMap = new Map<string, string>;
+
+    if (thumbnailIds.length > 0) {
+      await Promise.all(thumbnailIds.map(async id => {
+        try {
+          const asset = await this.assetFacade.getAssetDetail(id);
+
+          thumbnailMap.set(id, asset.url);
+        } catch {
+        }
+      }));
+    }
+
+    // Batch fetch discussion counts
+    const discussionCounts = await this.prisma.discussion.groupBy({
+      by:     ['paperId'],
+      where:  { paperId: { in: paperIds } },
+      _count: { paperId: true },
+    });
+
+    const discussionCountMap = new Map<string, number>;
+
+    discussionCounts.forEach(item => {
+      discussionCountMap.set(item.paperId, item._count.paperId);
+    });
+
+    // Batch fetch user reactions if userId is provided
+    const reactionMap = new Map<string, {
+      isLiked:   boolean;
+      isUnliked: boolean;
+    }>;
+
+    if (userId) {
+      const reactions = await this.prisma.reaction.findMany({ where: {
+        userId,
+        paperId: { in: paperIds },
+      } });
+
+      reactions.forEach(reaction => {
+        const existing = reactionMap.get(reaction.paperId) ?? {
+          isLiked:   false,
+          isUnliked: false,
+        };
+
+        if (reaction.type === 'LIKE') {
+          existing.isLiked = true;
+        } else if (reaction.type === 'UNLIKE') {
+          existing.isUnliked = true;
+        }
+
+        reactionMap.set(reaction.paperId, existing);
+      });
+    }
+
+    // Map papers to list item DTOs
+    return papers.map(paper => {
+      const thumbnailUrl = paper.thumbnailId && thumbnailMap
+        ? thumbnailMap.get(paper.thumbnailId) ?? undefined
+        : undefined;
+
+      const myReaction = userId ? reactionMap.get(paper.id) : undefined;
+
+      return {
+        id:              paper.id,
+        paperId:         paper.paperId,
+        categories:      paper.categories,
+        title:           paper.title,
+        summary:         paper.summary,
+        likeCount:       paper.likeCount,
+        unlikeCount:     paper.unlikeCount,
+        discussionCount: discussionCountMap.get(paper.id) ?? 0,
+        thumbnailUrl,
+        myReaction,
+      };
+    });
+  }
+
   @Get('me/reacted')
   @ApiOperation({
     summary:     'Get my reacted papers',
@@ -213,7 +311,7 @@ export class PaperController {
     description: '현재 로그인한 사용자에게 추천된 논문 목록을 조회합니다. 최신순으로 정렬되며, limit 파라미터로 반환할 항목 수를 제한할 수 있습니다(기본값: 20개).',
   })
   @ApiResponseType({
-    type:    PaperDetailDto,
+    type:    PaperListItemDto,
     isArray: true,
   })
   @ApiBearerAuth()
@@ -223,7 +321,7 @@ export class PaperController {
   }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getMyRecommendedPapers(req.user.id, limit ?? 20);
 
-    return await this.mapPapersToDto(papers);
+    return await this.mapPapersToListItemDto(papers, req.user.id);
   }
 
   @Post(':paperId/view')

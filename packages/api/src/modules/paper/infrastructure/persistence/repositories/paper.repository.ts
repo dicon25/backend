@@ -1,52 +1,47 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@scholub/database';
 import { PrismaService } from '@/common/modules/prisma';
+import { PaperEntity } from '../../../domain/entities';
 import {
   CategoryWithCount,
   PaginatedPapers,
   PaperListOptions,
   PaperRepositoryPort,
 } from '../../../domain/repositories';
-import { PaperEntity } from '../../../domain/entities';
-import { PaperMapper } from '../mappers';
-import { Prisma } from '@scholub/database';
 import { PaperSearchRepository, PaperSyncService } from '../../search/elasticsearch';
+import { PaperMapper } from '../mappers';
 
 @Injectable()
 export class PaperRepository implements PaperRepositoryPort {
   private readonly logger = new Logger(PaperRepository.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
+  constructor(private readonly prisma: PrismaService,
     private readonly paperSearchRepository: PaperSearchRepository | null,
-    private readonly paperSyncService: PaperSyncService | null,
-  ) {}
+    private readonly paperSyncService: PaperSyncService | null) {
+  }
 
   async create(paper: Partial<PaperEntity>): Promise<PaperEntity> {
     const data = PaperMapper.toPersistence(paper);
-    const created = await this.prisma.paper.create({
-      data: data as Prisma.PaperCreateInput,
-    });
+    const created = await this.prisma.paper.create({ data: data as Prisma.PaperCreateInput });
+
     return PaperMapper.toDomain(created);
   }
 
   async findById(id: string): Promise<PaperEntity | null> {
-    const paper = await this.prisma.paper.findUnique({
-      where: { id },
-    });
+    const paper = await this.prisma.paper.findUnique({ where: { id } });
+
     return paper ? PaperMapper.toDomain(paper) : null;
   }
 
   async findByPaperId(paperId: string): Promise<PaperEntity | null> {
-    const paper = await this.prisma.paper.findUnique({
-      where: { paperId },
-    });
+    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+
     return paper ? PaperMapper.toDomain(paper) : null;
   }
 
   async findByDoi(doi: string): Promise<PaperEntity | null> {
-    const paper = await this.prisma.paper.findUnique({
-      where: { doi },
-    });
+    const paper = await this.prisma.paper.findUnique({ where: { doi } });
+
     return paper ? PaperMapper.toDomain(paper) : null;
   }
 
@@ -57,6 +52,7 @@ export class PaperRepository implements PaperRepositoryPort {
         return await this.paperSearchRepository.search(options);
       } catch (error) {
         this.logger.warn('Elasticsearch search failed, falling back to PostgreSQL', error);
+
         // Fall through to PostgreSQL search
       }
     }
@@ -66,10 +62,15 @@ export class PaperRepository implements PaperRepositoryPort {
   }
 
   private async prismaSearch(options: PaperListOptions): Promise<PaginatedPapers> {
-    const { page, limit, sortBy = 'createdAt', sortOrder = 'desc', filters } = options;
-    const skip = (page - 1) * limit;
+    const {
+      page,
+      limit,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      filters,
+    } = options;
 
-    const where: Prisma.PaperWhereInput = {};
+    const skip = (page - 1) * limit;    const where: Prisma.PaperWhereInput = {};
 
     if (filters?.categories && filters.categories.length > 0) {
       where.categories = { hasSome: filters.categories };
@@ -82,14 +83,18 @@ export class PaperRepository implements PaperRepositoryPort {
     if (filters?.year) {
       where.issuedAt = {
         gte: new Date(`${filters.year}-01-01`),
-        lt: new Date(`${filters.year + 1}-01-01`),
+        lt:  new Date(`${filters.year + 1}-01-01`),
       };
     }
 
     if (filters?.searchQuery) {
       where.OR = [
-        { title: { contains: filters.searchQuery, mode: 'insensitive' } },
-        { summary: { contains: filters.searchQuery, mode: 'insensitive' } },
+        { title: {
+          contains: filters.searchQuery, mode: 'insensitive',
+        } },
+        { summary: {
+          contains: filters.searchQuery, mode: 'insensitive',
+        } },
         { authors: { hasSome: [filters.searchQuery] } },
       ];
     }
@@ -98,14 +103,14 @@ export class PaperRepository implements PaperRepositoryPort {
       this.prisma.paper.findMany({
         where,
         skip,
-        take: limit,
+        take:    limit,
         orderBy: { [sortBy]: sortOrder },
       }),
       this.prisma.paper.count({ where }),
     ]);
 
     return {
-      papers: papers.map(PaperMapper.toDomain),
+      papers:     papers.map(PaperMapper.toDomain),
       total,
       page,
       limit,
@@ -115,10 +120,12 @@ export class PaperRepository implements PaperRepositoryPort {
 
   async update(id: string, data: Partial<PaperEntity>): Promise<PaperEntity> {
     const updateData = PaperMapper.toPersistence(data);
+
     const updated = await this.prisma.paper.update({
       where: { id },
-      data: updateData,
+      data:  updateData,
     });
+
     const result = PaperMapper.toDomain(updated);
 
     // Update in Elasticsearch
@@ -127,6 +134,7 @@ export class PaperRepository implements PaperRepositoryPort {
         await this.paperSyncService.updatePaper(id, data);
       } catch (error) {
         this.logger.warn(`Failed to update paper in Elasticsearch: ${id}`, error);
+
         // Don't throw - allow the operation to continue even if indexing fails
       }
     }
@@ -135,68 +143,69 @@ export class PaperRepository implements PaperRepositoryPort {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.paper.delete({
-      where: { id },
-    });
+    await this.prisma.paper.delete({ where: { id } });
   }
 
   async incrementViewCount(id: string): Promise<void> {
     await this.prisma.paper.update({
       where: { id },
-      data: { totalViewCount: { increment: 1 } },
+      data:  { totalViewCount: { increment: 1 } },
     });
 
     // Update view count in Elasticsearch
     if (this.paperSyncService) {
       try {
         const paper = await this.findById(id);
+
         if (paper) {
           await this.paperSyncService.updatePaper(id, { totalViewCount: paper.totalViewCount });
         }
       } catch (error) {
         this.logger.warn(`Failed to update view count in Elasticsearch: ${id}`, error);
+
         // Don't throw - allow the operation to continue even if indexing fails
       }
     }
   }
 
   async getCategories(): Promise<CategoryWithCount[]> {
-    const papers = await this.prisma.paper.findMany({
-      select: { categories: true },
-    });
+    const papers = await this.prisma.paper.findMany({ select: { categories: true } });    const categoryMap = new Map<string, number>;
 
-    const categoryMap = new Map<string, number>();
-    papers.forEach((paper) => {
-      paper.categories.forEach((category) => {
+    papers.forEach(paper => {
+      paper.categories.forEach(category => {
         categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
       });
     });
 
     return Array.from(categoryMap.entries())
-      .map(([category, count]) => ({ category, count }))
+      .map(([category, count]) => ({
+        category, count,
+      }))
       .sort((a, b) => b.count - a.count);
   }
 
   async findByCategory(category: string, options: PaperListOptions): Promise<PaginatedPapers> {
-    const { page, limit, sortBy = 'createdAt', sortOrder = 'desc' } = options;
-    const skip = (page - 1) * limit;
+    const {
+      page,
+      limit,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = options;
 
-    const where: Prisma.PaperWhereInput = {
-      categories: { has: category },
-    };
+    const skip = (page - 1) * limit;    const where: Prisma.PaperWhereInput = { categories: { has: category } };
 
     const [papers, total] = await Promise.all([
       this.prisma.paper.findMany({
         where,
         skip,
-        take: limit,
+        take:    limit,
         orderBy: { [sortBy]: sortOrder },
       }),
       this.prisma.paper.count({ where }),
     ]);
 
     return {
-      papers: papers.map(PaperMapper.toDomain),
+      papers:     papers.map(PaperMapper.toDomain),
       total,
       page,
       limit,
@@ -206,30 +215,30 @@ export class PaperRepository implements PaperRepositoryPort {
 
   async getHeadlinePapers(limit: number): Promise<PaperEntity[]> {
     // 최근 7일 내 추가 + 인기도 점수 상위
-    const sevenDaysAgo = new Date();
+    const sevenDaysAgo = new Date;
 
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const papers = await this.prisma.$queryRaw<Array<{
-      id: string;
-      paperId: string;
-      title: string;
-      categories: string[];
-      authors: string[];
-      summary: string;
-      content: Prisma.JsonValue;
-      hashtags: string[];
-      doi: string;
-      url: string | null;
-      pdfUrl: string | null;
-      issuedAt: Date | null;
-      likeCount: number;
-      unlikeCount: number;
+      id:             string;
+      paperId:        string;
+      title:          string;
+      categories:     string[];
+      authors:        string[];
+      summary:        string;
+      content:        Prisma.JsonValue;
+      hashtags:       string[];
+      doi:            string;
+      url:            string | null;
+      pdfUrl:         string | null;
+      issuedAt:       Date | null;
+      likeCount:      number;
+      unlikeCount:    number;
       totalViewCount: number;
-      thumbnailId: string | null;
-      pdfId: string;
-      createdAt: Date;
-      updatedAt: Date;
+      thumbnailId:    string | null;
+      pdfId:          string;
+      createdAt:      Date;
+      updatedAt:      Date;
     }>>`
       SELECT *
       FROM "Paper"
@@ -243,30 +252,30 @@ export class PaperRepository implements PaperRepositoryPort {
 
   async getPopularPapers(limit: number, days: number = 90): Promise<PaperEntity[]> {
     // 최근 N일 내 논문 중 인기도 점수 상위
-    const daysAgo = new Date();
+    const daysAgo = new Date;
 
     daysAgo.setDate(daysAgo.getDate() - days);
 
     const papers = await this.prisma.$queryRaw<Array<{
-      id: string;
-      paperId: string;
-      title: string;
-      categories: string[];
-      authors: string[];
-      summary: string;
-      content: Prisma.JsonValue;
-      hashtags: string[];
-      doi: string;
-      url: string | null;
-      pdfUrl: string | null;
-      issuedAt: Date | null;
-      likeCount: number;
-      unlikeCount: number;
+      id:             string;
+      paperId:        string;
+      title:          string;
+      categories:     string[];
+      authors:        string[];
+      summary:        string;
+      content:        Prisma.JsonValue;
+      hashtags:       string[];
+      doi:            string;
+      url:            string | null;
+      pdfUrl:         string | null;
+      issuedAt:       Date | null;
+      likeCount:      number;
+      unlikeCount:    number;
       totalViewCount: number;
-      thumbnailId: string | null;
-      pdfId: string;
-      createdAt: Date;
-      updatedAt: Date;
+      thumbnailId:    string | null;
+      pdfId:          string;
+      createdAt:      Date;
+      updatedAt:      Date;
     }>>`
       SELECT *
       FROM "Paper"
@@ -281,7 +290,7 @@ export class PaperRepository implements PaperRepositoryPort {
   async getLatestPapers(limit: number): Promise<PaperEntity[]> {
     // 발행일(issuedAt) 최신순, 없으면 createdAt 최신순
     const papers = await this.prisma.paper.findMany({
-      take: limit,
+      take:    limit,
       orderBy: [
         { issuedAt: 'desc' },
         { createdAt: 'desc' },
@@ -291,6 +300,4 @@ export class PaperRepository implements PaperRepositoryPort {
     return papers.map(paper => PaperMapper.toDomain(paper));
   }
 }
-
-
 

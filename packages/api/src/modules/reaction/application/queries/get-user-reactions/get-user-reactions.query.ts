@@ -1,10 +1,7 @@
 export class GetUserReactionsQuery {
-  constructor(
-    public readonly userId: string,
+  constructor(public readonly userId: string,
     public readonly page: number,
-    public readonly limit: number,
-  ) {}
+    public readonly limit: number) {
+  }
 }
-
-
 

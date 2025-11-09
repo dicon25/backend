@@ -1,8 +1,7 @@
 export class UpdateProfileCommand {
-  constructor(
-    public readonly userId: string,
+  constructor(public readonly userId: string,
     public readonly name?: string,
-    public readonly profilePicture?: Express.Multer.File,
-  ) {}
+    public readonly profilePicture?: Express.Multer.File) {
+  }
 }
 

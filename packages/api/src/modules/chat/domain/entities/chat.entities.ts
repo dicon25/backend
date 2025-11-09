@@ -5,9 +5,9 @@ export enum ChatMessageRole {
 }
 
 export class ChatSessionEntity {
-  id: string;
-  userId: string;
-  paperId?: string;
+  id:        string;
+  userId:    string;
+  paperId?:  string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -17,17 +17,15 @@ export class ChatSessionEntity {
 }
 
 export class ChatMessageEntity {
-  id: string;
-  chatSessionId: string;
-  content: string;
-  role: ChatMessageRole;
+  id:                 string;
+  chatSessionId:      string;
+  content:            string;
+  role:               ChatMessageRole;
   referencedPaperIds: string[];
-  createdAt: Date;
+  createdAt:          Date;
 
   constructor(data: ChatMessageEntity) {
     Object.assign(this, data);
   }
 }
-
-
 

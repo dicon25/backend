@@ -1,72 +1,64 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { DiscussionRepositoryPort, DiscussionMessageRepositoryPort } from '../domain/repositories';
-import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@/common/modules/prisma';
+import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
+import { DiscussionMessageRepositoryPort, DiscussionRepositoryPort } from '../domain/repositories';
 
 // Commands
 export class CreateDiscussionCommand {
-  constructor(
-    public readonly paperId: string,
+  constructor(public readonly paperId: string,
     public readonly title: string,
     public readonly content: string,
-    public readonly creatorId: string,
-  ) {}
+    public readonly creatorId: string) {
+  }
 }
 
 export class CreateMessageCommand {
-  constructor(
-    public readonly discussionId: string,
+  constructor(public readonly discussionId: string,
     public readonly userId: string,
-    public readonly content: string,
-  ) {}
+    public readonly content: string) {
+  }
 }
 
 export class UpdateMessageCommand {
-  constructor(
-    public readonly messageId: string,
+  constructor(public readonly messageId: string,
     public readonly userId: string,
-    public readonly content: string,
-  ) {}
+    public readonly content: string) {
+  }
 }
 
 export class DeleteMessageCommand {
-  constructor(
-    public readonly messageId: string,
-    public readonly userId: string,
-  ) {}
+  constructor(public readonly messageId: string,
+    public readonly userId: string) {
+  }
 }
 
 export class ToggleMessageLikeCommand {
-  constructor(
-    public readonly messageId: string,
-    public readonly userId: string,
-  ) {}
+  constructor(public readonly messageId: string,
+    public readonly userId: string) {
+  }
 }
 
 // Handlers
 @CommandHandler(CreateDiscussionCommand)
 export class CreateDiscussionHandler implements ICommandHandler<CreateDiscussionCommand> {
-  constructor(
-    private readonly discussionRepository: DiscussionRepositoryPort,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly discussionRepository: DiscussionRepositoryPort,
+    private readonly prisma: PrismaService) {
+  }
 
   async execute(command: CreateDiscussionCommand): Promise<DiscussionEntity> {
     const discussion = await this.discussionRepository.create({
-      paperId: command.paperId,
-      title: command.title,
-      content: command.content,
+      paperId:   command.paperId,
+      title:     command.title,
+      content:   command.content,
       creatorId: command.creatorId,
     });
 
-    await this.prisma.userActivity.create({
-      data: {
-        userId: command.creatorId,
-        paperId: command.paperId,
-        type: 'START_DISCUSSION',
-      },
-    });
+    await this.prisma.userActivity.create({ data: {
+      userId:  command.creatorId,
+      paperId: command.paperId,
+      type:    'START_DISCUSSION',
+    } });
 
     return discussion;
   }
@@ -74,43 +66,43 @@ export class CreateDiscussionHandler implements ICommandHandler<CreateDiscussion
 
 @CommandHandler(CreateMessageCommand)
 export class CreateMessageHandler implements ICommandHandler<CreateMessageCommand> {
-  constructor(
-    private readonly discussionRepository: DiscussionRepositoryPort,
+  constructor(private readonly discussionRepository: DiscussionRepositoryPort,
     private readonly messageRepository: DiscussionMessageRepositoryPort,
-    private readonly prisma: PrismaService,
-  ) {}
+    private readonly prisma: PrismaService) {
+  }
 
   async execute(command: CreateMessageCommand): Promise<DiscussionMessageEntity> {
     const discussion = await this.discussionRepository.findById(command.discussionId);
+
     if (!discussion) {
       throw new NotFoundException('Discussion not found');
     }
 
     const message = await this.messageRepository.create({
       discussionId: command.discussionId,
-      userId: command.userId,
-      content: command.content,
+      userId:       command.userId,
+      content:      command.content,
     });
 
     await this.discussionRepository.updateCounts(command.discussionId);
 
-    await this.prisma.userActivity.create({
-      data: {
-        userId: command.userId,
-        paperId: discussion.paperId,
-        type: 'JOIN_DISCUSSION',
-      },
-    });
+    await this.prisma.userActivity.create({ data: {
+      userId:  command.userId,
+      paperId: discussion.paperId,
+      type:    'JOIN_DISCUSSION',
+    } });
 
     // Get all users who participated in this discussion (excluding the message author)
     const allMessages = await this.prisma.discussionMessage.findMany({
-      where: { discussionId: command.discussionId },
-      select: { userId: true },
+      where:    { discussionId: command.discussionId },
+      select:   { userId: true },
       distinct: ['userId'],
     });
 
-    const participantUserIds = new Set<string>();
+    const participantUserIds = new Set<string>;
+
     participantUserIds.add(discussion.creatorId); // Add discussion creator
+
     allMessages.forEach(msg => participantUserIds.add(msg.userId));
 
     // Remove the message author from notification recipients
@@ -120,15 +112,13 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
 
     // Create notifications for all participants
     if (participantUserIds.size > 0) {
-      await this.prisma.notification.createMany({
-        data: Array.from(participantUserIds).map(userId => ({
-          userId,
-          type: 'DISCUSSION_ACTIVITY',
-          message: notificationMessage,
-          relatedPaperId: discussion.paperId,
-          relatedUserId: command.userId,
-        })),
-      });
+      await this.prisma.notification.createMany({ data: Array.from(participantUserIds).map(userId => ({
+        userId,
+        type:           'DISCUSSION_ACTIVITY',
+        message:        notificationMessage,
+        relatedPaperId: discussion.paperId,
+        relatedUserId:  command.userId,
+      })) });
     }
 
     return message;
@@ -137,10 +127,12 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
 
 @CommandHandler(UpdateMessageCommand)
 export class UpdateMessageHandler implements ICommandHandler<UpdateMessageCommand> {
-  constructor(private readonly messageRepository: DiscussionMessageRepositoryPort) {}
+  constructor(private readonly messageRepository: DiscussionMessageRepositoryPort) {
+  }
 
   async execute(command: UpdateMessageCommand): Promise<DiscussionMessageEntity> {
     const message = await this.messageRepository.findById(command.messageId);
+
     if (!message) {
       throw new NotFoundException('Message not found');
     }
@@ -155,13 +147,13 @@ export class UpdateMessageHandler implements ICommandHandler<UpdateMessageComman
 
 @CommandHandler(DeleteMessageCommand)
 export class DeleteMessageHandler implements ICommandHandler<DeleteMessageCommand> {
-  constructor(
-    private readonly messageRepository: DiscussionMessageRepositoryPort,
-    private readonly discussionRepository: DiscussionRepositoryPort,
-  ) {}
+  constructor(private readonly messageRepository: DiscussionMessageRepositoryPort,
+    private readonly discussionRepository: DiscussionRepositoryPort) {
+  }
 
   async execute(command: DeleteMessageCommand): Promise<void> {
     const message = await this.messageRepository.findById(command.messageId);
+
     if (!message) {
       throw new NotFoundException('Message not found');
     }
@@ -171,16 +163,21 @@ export class DeleteMessageHandler implements ICommandHandler<DeleteMessageComman
     }
 
     await this.messageRepository.delete(command.messageId);
+
     await this.discussionRepository.updateCounts(message.discussionId);
   }
 }
 
 @CommandHandler(ToggleMessageLikeCommand)
 export class ToggleMessageLikeHandler implements ICommandHandler<ToggleMessageLikeCommand> {
-  constructor(private readonly messageRepository: DiscussionMessageRepositoryPort) {}
+  constructor(private readonly messageRepository: DiscussionMessageRepositoryPort) {
+  }
 
-  async execute(command: ToggleMessageLikeCommand): Promise<{ action: 'created' | 'deleted' }> {
+  async execute(command: ToggleMessageLikeCommand): Promise<{
+    action: 'created' | 'deleted';
+  }> {
     const message = await this.messageRepository.findById(command.messageId);
+
     if (!message) {
       throw new NotFoundException('Message not found');
     }
@@ -188,6 +185,4 @@ export class ToggleMessageLikeHandler implements ICommandHandler<ToggleMessageLi
     return await this.messageRepository.toggleLike(command.messageId, command.userId);
   }
 }
-
-
 

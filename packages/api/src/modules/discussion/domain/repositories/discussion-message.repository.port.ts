@@ -1,9 +1,11 @@
 import { DiscussionMessageEntity } from '../entities';
 
 export interface PaginatedMessages {
-  messages: (DiscussionMessageEntity & { isLikedByMe?: boolean })[];
+  messages: (DiscussionMessageEntity & {
+    isLikedByMe?: boolean;
+  })[];
   total: number;
-  page: number;
+  page:  number;
   limit: number;
 }
 
@@ -18,8 +20,8 @@ export abstract class DiscussionMessageRepositoryPort {
   ): Promise<PaginatedMessages>;
   abstract update(id: string, content: string): Promise<DiscussionMessageEntity>;
   abstract delete(id: string): Promise<void>;
-  abstract toggleLike(messageId: string, userId: string): Promise<{ action: 'created' | 'deleted' }>;
+  abstract toggleLike(messageId: string, userId: string): Promise<{
+    action: 'created' | 'deleted';
+  }>;
 }
-
-
 

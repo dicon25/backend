@@ -143,6 +143,7 @@ export class S3Service {
       if (this.publicUrl.endsWith('/')) {
         return `${this.publicUrl}${key}`;
       }
+
       return `${this.publicUrl}/${key}`;
     }
 

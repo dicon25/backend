@@ -1,74 +1,55 @@
 import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
+import { PaginatedDiscussions, PaginatedMessages } from '../domain/repositories';
 import {
   CreateDiscussionCommand,
   CreateMessageCommand,
-  UpdateMessageCommand,
   DeleteMessageCommand,
   ToggleMessageLikeCommand,
+  UpdateMessageCommand,
 } from './commands';
-import {
-  GetDiscussionDetailQuery,
-  ListDiscussionsByPaperQuery,
-  ListDiscussionMessagesQuery,
-} from './queries';
-import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
-import { PaginatedDiscussions, PaginatedMessages } from '../domain/repositories';
+import { GetDiscussionDetailQuery, ListDiscussionMessagesQuery, ListDiscussionsByPaperQuery } from './queries';
 
 @Injectable()
 export class DiscussionFacade {
-  constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
-  ) {}
+  constructor(private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus) {
+  }
 
-  async createDiscussion(
-    paperId: string,
+  async createDiscussion(paperId: string,
     title: string,
     content: string,
-    creatorId: string,
-  ): Promise<DiscussionEntity> {
-    return await this.commandBus.execute(
-      new CreateDiscussionCommand(paperId, title, content, creatorId),
-    );
+    creatorId: string): Promise<DiscussionEntity> {
+    return await this.commandBus.execute(new CreateDiscussionCommand(paperId, title, content, creatorId));
   }
 
   async getDiscussionDetail(discussionId: string): Promise<DiscussionEntity> {
     return await this.queryBus.execute(new GetDiscussionDetailQuery(discussionId));
   }
 
-  async listDiscussionsByPaper(
-    paperId: string,
+  async listDiscussionsByPaper(paperId: string,
     page: number,
-    limit: number,
-  ): Promise<PaginatedDiscussions> {
+    limit: number): Promise<PaginatedDiscussions> {
     return await this.queryBus.execute(new ListDiscussionsByPaperQuery(paperId, page, limit));
   }
 
-  async createMessage(
-    discussionId: string,
+  async createMessage(discussionId: string,
     userId: string,
-    content: string,
-  ): Promise<DiscussionMessageEntity> {
+    content: string): Promise<DiscussionMessageEntity> {
     return await this.commandBus.execute(new CreateMessageCommand(discussionId, userId, content));
   }
 
-  async listMessages(
-    discussionId: string,
+  async listMessages(discussionId: string,
     page: number,
     limit: number,
-    userId?: string,
-  ): Promise<PaginatedMessages> {
-    return await this.queryBus.execute(
-      new ListDiscussionMessagesQuery(discussionId, page, limit, userId),
-    );
+    userId?: string): Promise<PaginatedMessages> {
+    return await this.queryBus.execute(new ListDiscussionMessagesQuery(discussionId, page, limit, userId));
   }
 
-  async updateMessage(
-    messageId: string,
+  async updateMessage(messageId: string,
     userId: string,
-    content: string,
-  ): Promise<DiscussionMessageEntity> {
+    content: string): Promise<DiscussionMessageEntity> {
     return await this.commandBus.execute(new UpdateMessageCommand(messageId, userId, content));
   }
 
@@ -76,13 +57,11 @@ export class DiscussionFacade {
     return await this.commandBus.execute(new DeleteMessageCommand(messageId, userId));
   }
 
-  async toggleMessageLike(
-    messageId: string,
-    userId: string,
-  ): Promise<{ action: 'created' | 'deleted' }> {
+  async toggleMessageLike(messageId: string,
+    userId: string): Promise<{
+    action: 'created' | 'deleted';
+  }> {
     return await this.commandBus.execute(new ToggleMessageLikeCommand(messageId, userId));
   }
 }
-
-
 

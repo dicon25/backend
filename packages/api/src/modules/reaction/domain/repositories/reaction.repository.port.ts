@@ -1,7 +1,7 @@
 import { ReactionEntity, ReactionType } from '../entities';
 
 export interface ReactionStats {
-  likeCount: number;
+  likeCount:   number;
   unlikeCount: number;
 }
 
@@ -23,8 +23,8 @@ export abstract class ReactionRepositoryPort {
     userId: string,
     page: number,
     limit: number,
-  ): Promise<{ reactions: ReactionEntity[]; total: number }>;
+  ): Promise<{
+    reactions: ReactionEntity[]; total: number;
+  }>;
 }
-
-
 

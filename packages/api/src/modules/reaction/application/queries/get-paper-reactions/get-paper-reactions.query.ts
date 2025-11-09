@@ -1,6 +1,5 @@
 export class GetPaperReactionsQuery {
-  constructor(public readonly paperId: string) {}
+  constructor(public readonly paperId: string) {
+  }
 }
-
-
 

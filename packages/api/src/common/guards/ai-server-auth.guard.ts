@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
@@ -9,12 +14,13 @@ import { Request } from 'express';
  */
 @Injectable()
 export class AiServerAuthGuard implements CanActivate {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+  }
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing or invalid authorization header');
     }
@@ -33,6 +39,4 @@ export class AiServerAuthGuard implements CanActivate {
     return true;
   }
 }
-
-
 

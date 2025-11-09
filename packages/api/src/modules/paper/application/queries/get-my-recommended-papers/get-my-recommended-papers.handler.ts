@@ -32,7 +32,7 @@ export class GetMyRecommendedPapersHandler implements IQueryHandler<GetMyRecomme
   async execute(query: GetMyRecommendedPapersQuery): Promise<PaperResult[]> {
     // Get recommended papers for user
     const recommendations = await this.prisma.userRecommendation.findMany({
-      where:  { userId: query.userId },
+      where:   { userId: query.userId },
       include: { paper: true },
     });
 
@@ -42,6 +42,7 @@ export class GetMyRecommendedPapersHandler implements IQueryHandler<GetMyRecomme
       const sortedRecommendations = recommendations.sort((a, b) => {
         const aDate = a.paper.issuedAt ?? a.paper.createdAt;
         const bDate = b.paper.issuedAt ?? b.paper.createdAt;
+
         return bDate.getTime() - aDate.getTime();
       });
 
@@ -54,7 +55,7 @@ export class GetMyRecommendedPapersHandler implements IQueryHandler<GetMyRecomme
 
     // Fallback: Get papers matching user's interested categories
     const userPreference = await this.prisma.userPreference.findUnique({
-      where: { userId: query.userId },
+      where:  { userId: query.userId },
       select: { interestedCategories: true },
     });
 
@@ -67,12 +68,8 @@ export class GetMyRecommendedPapersHandler implements IQueryHandler<GetMyRecomme
 
     // Find papers that have at least one category matching user's interested categories
     const papers = await this.prisma.paper.findMany({
-      where: {
-        categories: {
-          hasSome: interestedCategories,
-        },
-      },
-      take: query.limit,
+      where:   { categories: { hasSome: interestedCategories } },
+      take:    query.limit,
       orderBy: [
         { issuedAt: 'desc' },
         { createdAt: 'desc' },
@@ -89,7 +86,7 @@ export class GetMyRecommendedPapersHandler implements IQueryHandler<GetMyRecomme
 
   private async getLatestPapers(limit: number): Promise<PaperResult[]> {
     const papers = await this.prisma.paper.findMany({
-      take: limit,
+      take:    limit,
       orderBy: [
         { issuedAt: 'desc' },
         { createdAt: 'desc' },

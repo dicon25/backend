@@ -10,7 +10,7 @@ export function getMulterS3Uploader(options: {
   const allowedExts = options.extensions?.map(ext => ext.toLowerCase());
 
   return {
-    storage: memoryStorage(),
+    storage:    memoryStorage(),
     limits:     { fileSize: options.maxSize ?? undefined },
     fileFilter: (_, file, cb) => {
       const ext = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));

@@ -1,9 +1,6 @@
 export class GetPaperDetailQuery {
-  constructor(
-    public readonly paperId: string,
-    public readonly userId?: string,
-  ) {}
+  constructor(public readonly paperId: string,
+    public readonly userId?: string) {
+  }
 }
-
-
 

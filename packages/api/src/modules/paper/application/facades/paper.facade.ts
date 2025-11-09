@@ -1,28 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { CreatePaperCommand, DeletePaperCommand, RecordPaperViewCommand, RecordPaperViewResult } from '../commands';
-import {
-  GetCategoriesQuery,
-  GetPaperDetailHandler,
-  GetPaperDetailQuery,
-  ListPapersByCategoryQuery,
-  ListPapersQuery,
-  GetHeadlinePapersQuery,
-  GetPopularPapersQuery,
-  GetLatestPapersQuery,
-  GetMyReactedPapersQuery,
-  GetMyDiscussedPapersQuery,
-  GetMyRecommendedPapersQuery,
-} from '../queries';
 import { PaperEntity } from '../../domain/entities';
 import { CategoryWithCount, PaginatedPapers, PaperListOptions } from '../../domain/repositories';
+import {
+  CreatePaperCommand,
+  DeletePaperCommand,
+  RecordPaperViewCommand,
+  RecordPaperViewResult,
+} from '../commands';
+import {
+  GetCategoriesQuery,
+  GetHeadlinePapersQuery,
+  GetLatestPapersQuery,
+  GetMyDiscussedPapersQuery,
+  GetMyReactedPapersQuery,
+  GetMyRecommendedPapersQuery,
+  GetPaperDetailHandler,
+  GetPaperDetailQuery,
+  GetPopularPapersQuery,
+  ListPapersByCategoryQuery,
+  ListPapersQuery,
+} from '../queries';
 
 @Injectable()
 export class PaperFacade {
-  constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
-  ) {}
+  constructor(private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus) {
+  }
 
   async createPaper(command: CreatePaperCommand): Promise<PaperEntity> {
     return await this.commandBus.execute(command);
@@ -32,10 +36,8 @@ export class PaperFacade {
     return await this.commandBus.execute(new DeletePaperCommand(paperId));
   }
 
-  async getPaperDetail(
-    paperId: string,
-    userId?: string,
-  ): Promise<ReturnType<GetPaperDetailHandler['execute']>> {
+  async getPaperDetail(paperId: string,
+    userId?: string): Promise<ReturnType<GetPaperDetailHandler['execute']>> {
     return await this.queryBus.execute(new GetPaperDetailQuery(paperId, userId));
   }
 
@@ -44,7 +46,7 @@ export class PaperFacade {
   }
 
   async getCategories(): Promise<CategoryWithCount[]> {
-    return await this.queryBus.execute(new GetCategoriesQuery());
+    return await this.queryBus.execute(new GetCategoriesQuery);
   }
 
   async listPapersByCategory(category: string, options: PaperListOptions): Promise<PaginatedPapers> {
@@ -79,6 +81,4 @@ export class PaperFacade {
     return await this.queryBus.execute(new GetMyRecommendedPapersQuery(userId, limit));
   }
 }
-
-
 

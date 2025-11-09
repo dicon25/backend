@@ -1,17 +1,17 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { LoginCommand } from './login.command';
-import { UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { RedisService } from '@/common/modules/redis';
-import { PrismaService } from '@/common/modules/prisma';
 import { JwtPayload } from '@modules/user/domain/types/jwt-payload.type';
+import { UnauthorizedException } from '@nestjs/common';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { PrismaService } from '@/common/modules/prisma';
+import { RedisService } from '@/common/modules/redis';
+import { LoginCommand } from './login.command';
 
 export interface LoginResult {
-  accessToken: string;
+  accessToken:  string;
   refreshToken: string;
   user: {
-    id: string;
+    id:    string;
     email: string;
     name?: string;
   };
@@ -19,17 +19,14 @@ export interface LoginResult {
 
 @CommandHandler(LoginCommand)
 export class LoginHandler implements ICommandHandler<LoginCommand> {
-  constructor(
-    private readonly prisma: PrismaService,
+  constructor(private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly redisService: RedisService,
-  ) {}
+    private readonly redisService: RedisService) {
+  }
 
   async execute(command: LoginCommand): Promise<LoginResult> {
     // Find user
-    const user = await this.prisma.user.findUnique({
-      where: { email: command.email },
-    });
+    const user = await this.prisma.user.findUnique({ where: { email: command.email } });
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -44,12 +41,12 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
 
     // Generate tokens
     const accessTokenPayload: JwtPayload = {
-      sub: user.id,
+      sub:  user.id,
       type: 'access',
     };
 
     const refreshTokenPayload: JwtPayload = {
-      sub: user.id,
+      sub:  user.id,
       type: 'refresh',
     };
 
@@ -58,15 +55,16 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
 
     // Store refresh token in Redis Set
     await this.redisService.sadd(`refresh:${user.id}`, refreshToken);
+
     await this.redisService.expire(`refresh:${user.id}`, 7 * 24 * 60 * 60);
 
     return {
       accessToken,
       refreshToken,
       user: {
-        id: user.id,
+        id:    user.id,
         email: user.email,
-        name: user.name ?? undefined,
+        name:  user.name ?? undefined,
       },
     };
   }

@@ -2,31 +2,31 @@ import { PaperEntity } from '../entities';
 import { PaperSortBy, SortOrder } from '../enums';
 
 export interface PaperFilters {
-  categories?: string[];
-  authors?: string[];
-  year?: number;
+  categories?:  string[];
+  authors?:     string[];
+  year?:        number;
   searchQuery?: string;
 }
 
 export interface PaperListOptions {
-  page: number;
-  limit: number;
-  sortBy?: PaperSortBy;
+  page:       number;
+  limit:      number;
+  sortBy?:    PaperSortBy;
   sortOrder?: SortOrder;
-  filters?: PaperFilters;
+  filters?:   PaperFilters;
 }
 
 export interface PaginatedPapers {
-  papers: PaperEntity[];
-  total: number;
-  page: number;
-  limit: number;
+  papers:     PaperEntity[];
+  total:      number;
+  page:       number;
+  limit:      number;
   totalPages: number;
 }
 
 export interface CategoryWithCount {
   category: string;
-  count: number;
+  count:    number;
 }
 
 export abstract class PaperRepositoryPort {
@@ -44,6 +44,4 @@ export abstract class PaperRepositoryPort {
   abstract getPopularPapers(limit: number, days?: number): Promise<PaperEntity[]>;
   abstract getLatestPapers(limit: number): Promise<PaperEntity[]>;
 }
-
-
 

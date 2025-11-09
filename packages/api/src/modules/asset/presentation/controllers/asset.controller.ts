@@ -11,7 +11,7 @@ export class AssetController {
 
   @Get('/exists')
   @ApiOperation({
-    summary: 'Check if asset exists',
+    summary:     'Check if asset exists',
     description: '에셋 키를 사용하여 특정 에셋이 존재하는지 확인합니다. 에셋 키를 쿼리 파라미터로 전달하면 해당 에셋의 존재 여부를 반환합니다. 크롤러에서 기존 에셋 ID를 재사용하기 전에 유효성을 검증하는 데 사용됩니다.',
   })
   async checkAssetExists(@Query('key') key: string): Promise<CheckAssetExistsResult> {

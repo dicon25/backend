@@ -1,8 +1,8 @@
 export interface LoginResult {
-  accessToken: string;
+  accessToken:  string;
   refreshToken: string;
   user: {
-    id: string;
+    id:    string;
     email: string;
     name?: string;
   };

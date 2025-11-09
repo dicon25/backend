@@ -18,5 +18,3 @@ export class PaperListDto {
   totalPages: number;
 }
 
-
-

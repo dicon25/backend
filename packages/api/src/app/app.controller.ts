@@ -12,7 +12,7 @@ export class AppController {
   @CacheKey('app.version')
   @CacheTTL(60)
   @ApiOperation({
-    summary: 'Get application version',
+    summary:     'Get application version',
     description: '현재 배포된 애플리케이션의 버전 정보를 반환합니다. package.json의 version 필드를 읽어 반환하며, 60초간 캐시됩니다.',
   })
   getVersion(): string {

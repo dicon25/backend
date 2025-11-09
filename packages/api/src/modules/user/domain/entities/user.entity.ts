@@ -4,11 +4,11 @@ import { DataClass } from 'dataclasses';
 export type UserEntitySafe = Omit<UserEntity, 'password'>;
 
 export class UserEntity extends DataClass {
-  id: string;
-  email: string;
+  id:       string;
+  email:    string;
   password: string;
-  name: string;
-  status: UserStatus;
+  name:     string;
+  status:   UserStatus;
 
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +23,7 @@ export class UserEntity extends DataClass {
 
   toSafeUser(): UserEntitySafe {
     const { password, ...safeUser } = this;
+
     return safeUser as UserEntitySafe;
   }
 }

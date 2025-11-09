@@ -1,12 +1,12 @@
 import { AssetModule } from '@modules/asset';
-import { UserModule } from '@modules/user';
-import { PaperModule } from '@modules/paper';
-import { ReactionModule } from '@modules/reaction';
-import { DiscussionModule } from '@modules/discussion';
 import { ChatModule } from '@modules/chat';
+import { DiscussionModule } from '@modules/discussion';
 import { NotificationModule } from '@modules/notification';
-import { SubscriptionModule } from '@modules/subscription';
+import { PaperModule } from '@modules/paper';
 import { PreferenceModule } from '@modules/preference';
+import { ReactionModule } from '@modules/reaction';
+import { SubscriptionModule } from '@modules/subscription';
+import { UserModule } from '@modules/user';
 import { Module } from '@nestjs/common';
 
 const features = [

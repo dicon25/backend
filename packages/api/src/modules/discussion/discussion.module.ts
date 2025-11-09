@@ -1,39 +1,24 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@/common/modules/prisma';
-
+// Other modules
+import { UserModule } from '../user/user.module';
 // Commands & Queries
 import {
   CreateDiscussionHandler,
   CreateMessageHandler,
-  UpdateMessageHandler,
   DeleteMessageHandler,
   ToggleMessageLikeHandler,
+  UpdateMessageHandler,
 } from './application/commands';
-import {
-  GetDiscussionDetailHandler,
-  ListDiscussionsByPaperHandler,
-  ListDiscussionMessagesHandler,
-} from './application/queries';
-
 // Facade
 import { DiscussionFacade } from './application/discussion.facade';
-
+import { GetDiscussionDetailHandler, ListDiscussionMessagesHandler, ListDiscussionsByPaperHandler } from './application/queries';
+import { DiscussionMessageRepositoryPort, DiscussionRepositoryPort } from './domain/repositories';
 // Infrastructure
-import {
-  DiscussionRepository,
-  DiscussionMessageRepository,
-} from './infrastructure/persistence';
-import {
-  DiscussionRepositoryPort,
-  DiscussionMessageRepositoryPort,
-} from './domain/repositories';
-
+import { DiscussionMessageRepository, DiscussionRepository } from './infrastructure/persistence';
 // Presentation
 import { DiscussionController } from './presentation/discussion.controller';
-
-// Other modules
-import { UserModule } from '../user/user.module';
 
 const commandHandlers = [
   CreateDiscussionHandler,
@@ -50,24 +35,25 @@ const queryHandlers = [
 ];
 
 @Module({
-  imports: [CqrsModule, PrismaModule, UserModule],
+  imports: [
+    CqrsModule, PrismaModule, UserModule,
+  ],
   providers: [
     ...commandHandlers,
     ...queryHandlers,
     DiscussionFacade,
     {
-      provide: DiscussionRepositoryPort,
+      provide:  DiscussionRepositoryPort,
       useClass: DiscussionRepository,
     },
     {
-      provide: DiscussionMessageRepositoryPort,
+      provide:  DiscussionMessageRepositoryPort,
       useClass: DiscussionMessageRepository,
     },
   ],
   controllers: [DiscussionController],
-  exports: [DiscussionFacade],
+  exports:     [DiscussionFacade],
 })
-export class DiscussionModule {}
-
-
+export class DiscussionModule {
+}
 
