@@ -1,4 +1,4 @@
-import { SearchRequest } from '@elastic/elasticsearch/lib/api/types';
+import { QueryDslBoolQuery, QueryDslQueryContainer, SortCombinations } from '@elastic/elasticsearch/lib/api/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
 import { PaperSortBy, SortOrder } from '../../../domain/enums';
@@ -43,14 +43,16 @@ export class PaperSearchRepository {
       await this.paperIndexService.ensureIndexExists();
 
       // Build query
-      const query: SearchRequest['body'] = { bool: {
-        must:   [],
-        filter: [],
-      } };
+      const boolQuery: QueryDslBoolQuery = {
+        must:   [] as QueryDslQueryContainer[],
+        filter: [] as QueryDslQueryContainer[],
+      };
+
+      const query: QueryDslQueryContainer = { bool: boolQuery };
 
       // Search query
       if (filters?.searchQuery) {
-        query.bool.must.push({ multi_match: {
+        (boolQuery.must as QueryDslQueryContainer[]).push({ multi_match: {
           query:  filters.searchQuery,
           fields: [
             'title^3',
@@ -66,27 +68,27 @@ export class PaperSearchRepository {
         } });
       } else {
         // Match all if no search query
-        query.bool.must.push({ match_all: {} });
+        (boolQuery.must as QueryDslQueryContainer[]).push({ match_all: {} });
       }
 
       // Filters
       if (filters?.categories && filters.categories.length > 0) {
-        query.bool.filter.push({ terms: { categories: filters.categories } });
+        (boolQuery.filter as QueryDslQueryContainer[]).push({ terms: { categories: filters.categories } });
       }
 
       if (filters?.authors && filters.authors.length > 0) {
-        query.bool.filter.push({ terms: { 'authors.keyword': filters.authors } });
+        (boolQuery.filter as QueryDslQueryContainer[]).push({ terms: { 'authors.keyword': filters.authors } });
       }
 
       if (filters?.year) {
-        query.bool.filter.push({ range: { issuedAt: {
+        (boolQuery.filter as QueryDslQueryContainer[]).push({ range: { issuedAt: {
           gte: `${filters.year}-01-01`,
           lt:  `${filters.year + 1}-01-01`,
         } } });
       }
 
       // Build sort
-      const sort: any[] = [];
+      const sort: SortCombinations[] = [];
 
       // Map PaperSortBy to Elasticsearch field
       let sortField: string;
@@ -125,12 +127,10 @@ export class PaperSearchRepository {
       // Execute search
       const response = await client.search({
         index: indexName,
-        body:  {
-          query,
-          sort,
-          from,
-          size: limit,
-        },
+        query,
+        sort,
+        from,
+        size:  limit,
       });
 
       // Handle total count (Elasticsearch 8.x returns object with value property)
@@ -138,8 +138,16 @@ export class PaperSearchRepository {
         ? response.hits.total
         : response.hits.total?.value ?? 0;
 
-      const hits = response.hits.hits;      // Get paper IDs from Elasticsearch results
-      const paperIds = hits.map((hit: any) => hit._source.id);
+      const hits = response.hits.hits;
+
+      // Get paper IDs from Elasticsearch results
+      const paperIds = hits.map(hit => {
+        const source = hit._source as {
+          id: string;
+        };
+
+        return source.id;
+      });
 
       /*
        * Fetch full paper data from PostgreSQL
@@ -147,13 +155,7 @@ export class PaperSearchRepository {
        */
       const papers = await this.prisma.paper.findMany({
         where:   { id: { in: paperIds } },
-        orderBy: paperIds.length > 0
-          ? {
-
-            // Preserve Elasticsearch result order
-            id: 'asc', // This will be reordered below
-          }
-          : { [sortField]: sortOrder },
+        orderBy: paperIds.length > 0 ? { id: 'asc' } : { [sortField]: sortOrder },
       });
 
       // Reorder papers to match Elasticsearch results

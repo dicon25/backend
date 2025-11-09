@@ -15,6 +15,7 @@ import { PrismaService } from '@/common/modules/prisma';
 import { AssetFacade } from '@/modules/asset/application/facades';
 import { PaperFacade } from '@/modules/paper/application/facades';
 import { PaperEntity } from '@/modules/paper/domain/entities';
+import { PaperSortBy, SortOrder } from '@/modules/paper/domain/enums';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
 import { Public } from '@/modules/user/presentation/decorators';
 import {
@@ -23,6 +24,7 @@ import {
   PaperDetailDto,
   PaperListDto,
   PaperListItemDto,
+  SearchPapersDto,
 } from '../dtos';
 import { RecordPaperViewResponseDto } from '../dtos/response/record-paper-view-response.dto';
 
@@ -50,25 +52,20 @@ export class PaperController {
   @Get('search')
   @ApiOperation({
     summary:     'Search papers',
-    description: 'Elasticsearch를 사용하여 논문을 검색합니다. 제목, 요약, 저자, 카테고리에서 검색어를 찾으며, 카테고리, 저자, 연도로 필터링할 수 있습니다. 검색어가 제공되지 않으면 모든 논문을 반환합니다.',
+    description: 'Elasticsearch를 사용하여 논문을 검색합니다. 제목, 요약, 저자, 카테고리에서 검색어를 찾습니다. 검색어가 제공되지 않으면 모든 논문을 반환합니다.',
   })
   @ApiResponseType({ type: PaperListDto })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async searchPapers(@Query() query: ListPapersDto, @Req() req: Request & {
+  async searchPapers(@Query() dto: SearchPapersDto, @Req() req: Request & {
     user: User;
   }) {
     const result = await this.paperFacade.listPapers({
-      page:      query.page ?? 1,
-      limit:     query.limit ?? 20,
-      sortBy:    query.sortBy,
-      sortOrder: query.sortOrder,
-      filters:   {
-        searchQuery: query.searchQuery,
-        categories:  query.categories,
-        authors:     query.authors,
-        year:        query.year,
-      },
+      page:      1,
+      limit:     20,
+      sortBy:    PaperSortBy.CREATED_AT,
+      sortOrder: SortOrder.DESC,
+      filters:   { searchQuery: dto.query },
     });
 
     const papers = await this.mapPapersToListItemDto(result.papers, req.user.id);
