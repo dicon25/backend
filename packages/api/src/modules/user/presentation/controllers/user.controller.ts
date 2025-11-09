@@ -34,6 +34,10 @@ export class UserController {
   }
 
   @Get('me')
+  @ApiOperation({
+    summary: 'Get current user information',
+    description: '현재 로그인한 사용자의 상세 정보를 조회합니다. 사용자 ID, 이메일, 이름, 프로필 사진 URL 등의 정보를 반환합니다. JWT 토큰에서 사용자 정보를 자동으로 추출합니다.',
+  })
   @ApiResponseType({
     type:        UserDetailResponseDto,
     description: 'User detail successful',
@@ -57,7 +61,10 @@ export class UserController {
     ],
     maxSize: 5 * 1024 * 1024, // 5MB
   })))
-  @ApiOperation({ summary: 'Update user profile (name and/or profile picture)' })
+  @ApiOperation({
+    summary: 'Update user profile (name and/or profile picture)',
+    description: '현재 로그인한 사용자의 프로필 정보를 수정합니다. 이름과 프로필 사진을 개별적으로 또는 함께 수정할 수 있습니다. 프로필 사진은 S3에 업로드되며, 최대 5MB까지 업로드 가능합니다. 지원되는 이미지 형식: JPG, JPEG, PNG, GIF, WEBP',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: {
     type:       'object',

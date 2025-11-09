@@ -1,5 +1,6 @@
 import { RedisHealthIndicator } from '@liaoliaots/nestjs-redis-health';
 import { Controller, Get } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import {
   HealthCheck,
   HealthCheckService,
@@ -36,6 +37,10 @@ export class HealthController {
   @Public()
   @Get('health')
   @HealthCheck()
+  @ApiOperation({
+    summary:     'Health check',
+    description: '시스템의 전반적인 상태를 확인하는 엔드포인트입니다. Google 연결 상태(외부 네트워크), PostgreSQL 데이터베이스 연결 상태, Redis 캐시 서버 연결 상태를 체크하여 각 서비스의 상태(up/down)를 반환합니다.',
+  })
   check() {
     return this.healthIndicator.check([
       () => this.httpIndicator.pingCheck('google', 'https://google.com'),

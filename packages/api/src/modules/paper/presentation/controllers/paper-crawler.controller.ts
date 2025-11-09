@@ -53,7 +53,10 @@ export class PaperCrawlerController {
     ],
     maxSize: 100 * 1024 * 1024, // 100MB
   })))
-  @ApiOperation({ summary: 'Create a new paper (crawler only)' })
+  @ApiOperation({
+    summary: 'Create a new paper (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 새로운 논문을 생성합니다. 논문 ID, 제목, 카테고리, 저자, 요약, 내용, DOI는 필수이며, PDF 파일과 썸네일 이미지를 업로드하거나 기존 에셋 ID를 제공할 수 있습니다. PDF는 최대 100MB까지 업로드 가능하며, PDF와 썸네일은 병렬로 업로드됩니다. 크롤러 인증이 필요합니다.',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: {
     type:       'object',
@@ -206,7 +209,10 @@ export class PaperCrawlerController {
   }
 
   @Delete(':paperId')
-  @ApiOperation({ summary: 'Delete a paper (crawler only)' })
+  @ApiOperation({
+    summary: 'Delete a paper (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 논문 ID를 사용하여 논문을 삭제합니다. 논문과 관련된 모든 데이터가 함께 삭제됩니다. 크롤러 인증이 필요합니다.',
+  })
   async deletePaper(@Param('paperId') paperId: string) {
     await this.paperFacade.deletePaper(paperId);
 
