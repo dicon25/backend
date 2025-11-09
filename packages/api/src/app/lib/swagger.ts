@@ -38,7 +38,7 @@ export function applySwagger(app: INestApplication): void {
   const config = (new DocumentBuilder)
     .setTitle('API')
     .setDescription('API documentation')
-    .setVersion(packageJson.version)
+    .setVersion(`${packageJson.version}-${Date.now()}`)
     .addBearerAuth({
       type:         'http',
       scheme:       'bearer',
@@ -77,12 +77,15 @@ export function applySwagger(app: INestApplication): void {
   SwaggerModule.setup('api/docs', app, document, {
     jsonDocumentUrl: 'api/docs-json',
     swaggerOptions:  {
-      persistAuthorization:   true,
-      displayRequestDuration: true,
-      docExpansion:           'none',
-      filter:                 true,
-      showRequestHeaders:     true,
+      persistAuthorization:     true,
+      displayRequestDuration:   true,
+      docExpansion:             'none',
+      filter:                   true,
+      showRequestHeaders:       true,
+      defaultModelsExpandDepth: -1,
+      defaultModelExpandDepth:  1,
     },
+    customSiteTitle: `API Docs - ${(new Date).toISOString()}`,
   });
 
   logger.log('Swagger documentation generated');
