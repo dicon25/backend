@@ -61,6 +61,10 @@ export class PaperIndexService {
           type:     'text',
           analyzer: 'standard',
         },
+        translatedSummary: {
+          type:     'text',
+          analyzer: 'standard',
+        },
         authors: {
           type:   'text',
           fields: { keyword: { type: 'keyword' } },

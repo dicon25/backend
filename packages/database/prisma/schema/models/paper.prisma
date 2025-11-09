@@ -9,6 +9,8 @@ model Paper {
 
   summary String
 
+  translatedSummary String?
+
   content Json
 
   hashtags String[] @default([])

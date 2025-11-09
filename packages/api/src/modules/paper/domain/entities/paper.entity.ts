@@ -7,6 +7,7 @@ export class PaperEntity {
   categories:     string[];
   authors:        string[];
   summary:        string;
+  translatedSummary?: string;
   content:        Prisma.JsonValue;
   hashtags:       string[];
   doi:            string;

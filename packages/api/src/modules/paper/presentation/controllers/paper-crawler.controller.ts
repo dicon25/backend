@@ -25,6 +25,7 @@ import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
 import { AssetFacade } from '@/modules/asset/application/facades';
 import { CreatePaperCommand } from '@/modules/paper/application/commands';
 import { PaperFacade } from '@/modules/paper/application/facades';
+import { PaperIndexService, PaperSyncService } from '@/modules/paper/infrastructure/search/elasticsearch';
 import { Public } from '@/modules/user/presentation/decorators';
 import { CreatePaperDto, PaperDetailDto } from '../dtos';
 
@@ -36,9 +37,13 @@ import { CreatePaperDto, PaperDetailDto } from '../dtos';
 export class PaperCrawlerController {
   private readonly logger = new Logger(PaperCrawlerController.name);
 
-  constructor(private readonly paperFacade: PaperFacade,
+  constructor(
+    private readonly paperFacade: PaperFacade,
     private readonly assetFacade: AssetFacade,
-    private readonly prisma: PrismaService) {
+    private readonly prisma: PrismaService,
+    private readonly paperSyncService: PaperSyncService,
+    private readonly paperIndexService: PaperIndexService,
+  ) {
   }
 
   @Post()
@@ -201,6 +206,7 @@ export class PaperCrawlerController {
       dto.categories,
       dto.authors,
       dto.summary,
+      dto.translatedSummary,
       dto.content,
       dto.doi,
       pdfId,
@@ -231,6 +237,85 @@ export class PaperCrawlerController {
     await this.paperFacade.deletePaper(paperId);
 
     return { message: 'Paper deleted successfully' };
+  }
+
+  @Delete()
+  @ApiOperation({
+    summary:     'Delete all papers (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 모든 논문을 삭제합니다. 논문과 관련된 S3 파일, Asset 테이블, Paper 테이블, Elasticsearch 인덱스의 모든 데이터가 삭제됩니다. 크롤러 인증이 필요합니다.',
+  })
+  async deleteAllPapers() {
+    const startTime = Date.now();
+
+    this.logger.log('[deleteAllPapers] Starting deletion of all papers');
+
+    // 1. Get all papers with their asset IDs
+    const papers = await this.prisma.paper.findMany({ select: {
+      id:          true,
+      pdfId:       true,
+      thumbnailId: true,
+    } });
+
+    this.logger.log(`[deleteAllPapers] Found ${papers.length} papers to delete`);
+
+    // 2. Collect all unique asset IDs
+    const assetIds = new Set<string>;
+
+    papers.forEach(paper => {
+      if (paper.pdfId) {
+        assetIds.add(paper.pdfId);
+      }
+
+      if (paper.thumbnailId) {
+        assetIds.add(paper.thumbnailId);
+      }
+    });
+
+    this.logger.log(`[deleteAllPapers] Found ${assetIds.size} unique assets to delete`);
+
+    // 3. Delete all papers from database first (to release foreign key constraints)
+    const paperDeletionStart = Date.now();
+    const deletedPapersCount = await this.prisma.paper.deleteMany({});
+
+    this.logger.log(`[deleteAllPapers] Paper deletion completed in ${Date.now() - paperDeletionStart}ms - deleted: ${deletedPapersCount.count} papers`);
+
+    const assetDeletionStart = Date.now();
+
+    let deletedAssetCount = 0;
+    let failedAssetCount = 0;
+
+    await Promise.all(Array.from(assetIds).map(async assetId => {
+      try {
+        await this.assetFacade.deleteAsset(assetId);
+
+        deletedAssetCount++;
+      } catch (error) {
+        this.logger.warn(`[deleteAllPapers] Failed to delete asset ${assetId}`, error);
+
+        failedAssetCount++;
+      }
+    }));
+
+    this.logger.log(`[deleteAllPapers] Asset deletion completed in ${Date.now() - assetDeletionStart}ms - deleted: ${deletedAssetCount}, failed: ${failedAssetCount}`);
+
+    // 5. Delete Elasticsearch index
+    try {
+      await this.paperIndexService.deleteIndex();
+
+      this.logger.log('[deleteAllPapers] Elasticsearch index deleted');
+    } catch (error) {
+      this.logger.warn('[deleteAllPapers] Failed to delete Elasticsearch index', error);
+    }
+
+    this.logger.log(`[deleteAllPapers] Total time: ${Date.now() - startTime}ms`);
+
+    return {
+      message:       'All papers deleted successfully',
+      deletedPapers: deletedPapersCount.count,
+      deletedAssets: deletedAssetCount,
+      failedAssets:  failedAssetCount,
+      totalTimeMs:   Date.now() - startTime,
+    };
   }
 }
 

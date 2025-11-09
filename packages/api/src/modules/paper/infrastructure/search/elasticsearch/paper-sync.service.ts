@@ -35,6 +35,7 @@ export class PaperSyncService {
           paperId:        paper.paperId,
           title:          paper.title,
           summary:        paper.summary,
+          translatedSummary: paper.translatedSummary,
           authors:        paper.authors,
           categories:     paper.categories,
           doi:            paper.doi,
@@ -66,11 +67,14 @@ export class PaperSyncService {
     }
 
     try {
-      const indexName = this.elasticsearchService.getIndexName();      const updateDoc: any = {};
+      const indexName = this.elasticsearchService.getIndexName();
+      const updateDoc: any = {};
 
       if (paper.title !== undefined) updateDoc.title = paper.title;
 
       if (paper.summary !== undefined) updateDoc.summary = paper.summary;
+
+      if (paper.translatedSummary !== undefined) updateDoc.translatedSummary = paper.translatedSummary;
 
       if (paper.authors !== undefined) updateDoc.authors = paper.authors;
 

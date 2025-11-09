@@ -47,6 +47,41 @@ export class PaperController {
     return await this.paperFacade.getCategories();
   }
 
+  @Get('search')
+  @ApiOperation({
+    summary:     'Search papers',
+    description: 'Elasticsearch를 사용하여 논문을 검색합니다. 제목, 요약, 저자, 카테고리에서 검색어를 찾으며, 카테고리, 저자, 연도로 필터링할 수 있습니다. 검색어가 제공되지 않으면 모든 논문을 반환합니다.',
+  })
+  @ApiResponseType({ type: PaperListDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async searchPapers(@Query() query: ListPapersDto, @Req() req: Request & {
+    user: User;
+  }) {
+    const result = await this.paperFacade.listPapers({
+      page:      query.page ?? 1,
+      limit:     query.limit ?? 20,
+      sortBy:    query.sortBy,
+      sortOrder: query.sortOrder,
+      filters:   {
+        searchQuery: query.searchQuery,
+        categories:  query.categories,
+        authors:     query.authors,
+        year:        query.year,
+      },
+    });
+
+    const papers = await this.mapPapersToListItemDto(result.papers, req.user.id);
+
+    return {
+      papers,
+      total:      result.total,
+      page:       result.page,
+      limit:      result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
   @Get('categories/:category')
   @ApiOperation({
     summary:     'Get papers by category',
@@ -164,24 +199,25 @@ export class PaperController {
       : undefined;
 
     return {
-      id:             paper.id,
-      paperId:        paper.paperId,
-      title:          paper.title,
-      categories:     paper.categories,
-      authors:        paper.authors,
-      summary:        paper.summary,
-      content:        paper.content,
-      doi:            paper.doi,
-      url:            paper.url,
-      pdfUrl:         paper.pdfUrl,
-      issuedAt:       paper.issuedAt,
-      likeCount:      paper.likeCount,
-      unlikeCount:    paper.unlikeCount,
-      totalViewCount: paper.totalViewCount,
+      id:                paper.id,
+      paperId:           paper.paperId,
+      title:             paper.title,
+      categories:        paper.categories,
+      authors:           paper.authors,
+      summary:           paper.summary,
+      translatedSummary: paper.translatedSummary,
+      content:           paper.content,
+      doi:               paper.doi,
+      url:               paper.url,
+      pdfUrl:            paper.pdfUrl,
+      issuedAt:          paper.issuedAt,
+      likeCount:         paper.likeCount,
+      unlikeCount:       paper.unlikeCount,
+      totalViewCount:    paper.totalViewCount,
       thumbnailUrl,
-      pdfId:          paper.pdfId,
-      createdAt:      paper.createdAt,
-      updatedAt:      paper.updatedAt,
+      pdfId:             paper.pdfId,
+      createdAt:         paper.createdAt,
+      updatedAt:         paper.updatedAt,
     };
   }
 
@@ -379,25 +415,26 @@ export class PaperController {
     }
 
     return {
-      id:             paper.id,
-      paperId:        paper.paperId,
-      title:          paper.title,
-      categories:     paper.categories,
-      authors:        paper.authors,
-      summary:        paper.summary,
-      content:        paper.content,
-      doi:            paper.doi,
-      url:            paper.url,
-      pdfUrl:         paper.pdfUrl,
-      issuedAt:       paper.issuedAt,
-      likeCount:      paper.likeCount,
-      unlikeCount:    paper.unlikeCount,
-      totalViewCount: paper.totalViewCount,
+      id:                paper.id,
+      paperId:           paper.paperId,
+      title:             paper.title,
+      categories:        paper.categories,
+      authors:           paper.authors,
+      summary:           paper.summary,
+      translatedSummary: paper.translatedSummary,
+      content:           paper.content,
+      doi:               paper.doi,
+      url:               paper.url,
+      pdfUrl:            paper.pdfUrl,
+      issuedAt:          paper.issuedAt,
+      likeCount:         paper.likeCount,
+      unlikeCount:       paper.unlikeCount,
+      totalViewCount:    paper.totalViewCount,
       thumbnailUrl,
-      pdfId:          paper.pdfId,
-      createdAt:      paper.createdAt,
-      updatedAt:      paper.updatedAt,
-      myReaction:     paper.myReaction,
+      pdfId:             paper.pdfId,
+      createdAt:         paper.createdAt,
+      updatedAt:         paper.updatedAt,
+      myReaction:        paper.myReaction,
     };
   }
 }

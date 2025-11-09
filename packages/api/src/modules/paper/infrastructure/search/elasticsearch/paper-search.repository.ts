@@ -1,3 +1,4 @@
+import { SearchRequest } from '@elastic/elasticsearch/lib/api/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
 import { PaperSortBy, SortOrder } from '../../../domain/enums';
@@ -42,7 +43,7 @@ export class PaperSearchRepository {
       await this.paperIndexService.ensureIndexExists();
 
       // Build query
-      const query: any = { bool: {
+      const query: SearchRequest['body'] = { bool: {
         must:   [],
         filter: [],
       } };
@@ -52,13 +53,16 @@ export class PaperSearchRepository {
         query.bool.must.push({ multi_match: {
           query:  filters.searchQuery,
           fields: [
-            'title^3',      // 제목에 가중치 3배
-            'summary^2',   // 요약에 가중치 2배
-            'authors^1.5', // 저자에 가중치 1.5배
-            'categories^1', // 카테고리에 가중치 1배
+            'title^3',
+            'summary^2',
+            'authors^1.5',
+            'categories^1',
           ],
-          type:      'best_fields',
-          fuzziness: 'AUTO',
+          type:           'best_fields',
+          fuzziness:      'AUTO',
+          operator:       'or',
+          prefix_length:  2,
+          max_expansions: 50,
         } });
       } else {
         // Match all if no search query
@@ -134,7 +138,7 @@ export class PaperSearchRepository {
         ? response.hits.total
         : response.hits.total?.value ?? 0;
 
-      const hits = response.hits.hits;      // Get paper IDs from Elasticsearch results
+      const hits = response.hits.hits;      // Get paper IDs from Elasticsearch results
       const paperIds = hits.map((hit: any) => hit._source.id);
 
       /*

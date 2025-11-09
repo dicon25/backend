@@ -27,6 +27,9 @@ export class PaperDetailDto {
   @ApiProperty()
   summary: string;
 
+  @ApiProperty({ required: false })
+  translatedSummary?: string;
+
   @ApiProperty()
   content: any;
 

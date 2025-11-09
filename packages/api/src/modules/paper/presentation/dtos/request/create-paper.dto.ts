@@ -60,6 +60,13 @@ export class CreatePaperDto {
   @IsNotEmpty()
   summary: string;
 
+  @ApiProperty({
+    description: 'Translated summary', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  translatedSummary?: string;
+
   @ApiProperty({ description: 'Paper content (JSON)' })
   @Transform(({ value }) => {
     if (typeof value === 'string') {

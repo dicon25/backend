@@ -5,6 +5,7 @@ export class CreatePaperCommand {
     public readonly categories: string[],
     public readonly authors: string[],
     public readonly summary: string,
+    public readonly translatedSummary?: string,
     public readonly content: any,
     public readonly doi: string,
     public readonly pdfId: string,
