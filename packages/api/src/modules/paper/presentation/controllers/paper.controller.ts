@@ -53,8 +53,10 @@ export class PaperController {
     description: '특정 카테고리에 속한 논문 목록을 페이지네이션과 정렬 옵션을 사용하여 조회합니다. URL 파라미터로 카테고리를 지정하며, 쿼리 파라미터로 페이지 번호, 페이지당 항목 수, 정렬 기준 및 정렬 순서를 지정할 수 있습니다.',
   })
   @ApiResponseType({ type: PaperListDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async listPapersByCategory(@Param('category') category: string, @Query() query: ListPapersDto, @Req() req: Request & {
-    user?: User;
+    user: User;
   }) {
     const result = await this.paperFacade.listPapersByCategory(category, {
       page:      query.page ?? 1,
@@ -63,7 +65,7 @@ export class PaperController {
       sortOrder: query.sortOrder,
     });
 
-    const papers = await this.mapPapersToListItemDto(result.papers, req.user?.id);
+    const papers = await this.mapPapersToListItemDto(result.papers, req.user.id);
 
     return {
       papers,
@@ -75,7 +77,6 @@ export class PaperController {
   }
 
   @Get('headlines')
-  @Public()
   @ApiOperation({
     summary:     'Get headline papers',
     description: '헤드라인 논문 목록을 조회합니다. 최근 7일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 4개입니다.',
@@ -84,16 +85,17 @@ export class PaperController {
     type:    PaperListItemDto,
     isArray: true,
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async getHeadlinePapers(@Req() req: Request & {
-    user?: User;
+    user: User;
   }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
 
-    return await this.mapPapersToListItemDto(papers, req.user?.id);
+    return await this.mapPapersToListItemDto(papers, req.user.id);
   }
 
   @Get('popular')
-  @Public()
   @ApiOperation({
     summary:     'Get popular papers',
     description: '인기 논문 목록을 조회합니다. 최근 90일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 20개입니다.',
@@ -102,16 +104,17 @@ export class PaperController {
     type:    PaperListItemDto,
     isArray: true,
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async getPopularPapers(@Req() req: Request & {
-    user?: User;
+    user: User;
   }, @Query('limit') limit?: number, @Query('days') days?: number) {
     const papers = await this.paperFacade.getPopularPapers(limit ?? 20, days ?? 90);
 
-    return await this.mapPapersToListItemDto(papers, req.user?.id);
+    return await this.mapPapersToListItemDto(papers, req.user.id);
   }
 
   @Get('latest')
-  @Public()
   @ApiOperation({
     summary:     'Get latest papers',
     description: '최신 연구 논문 목록을 조회합니다. 발행일(issuedAt) 기준으로 최신순으로 정렬하며, 발행일이 없는 경우 생성일(createdAt) 기준으로 정렬합니다. 기본값은 20개입니다.',
@@ -120,12 +123,14 @@ export class PaperController {
     type:    PaperListItemDto,
     isArray: true,
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async getLatestPapers(@Req() req: Request & {
-    user?: User;
+    user: User;
   }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getLatestPapers(limit ?? 20);
 
-    return await this.mapPapersToListItemDto(papers, req.user?.id);
+    return await this.mapPapersToListItemDto(papers, req.user.id);
   }
 
   private async mapPapersToDto(papers: PaperEntity[]): Promise<PaperDetailDto[]> {
@@ -250,7 +255,12 @@ export class PaperController {
         ? thumbnailMap.get(paper.thumbnailId) ?? undefined
         : undefined;
 
-      const myReaction = userId ? reactionMap.get(paper.id) : undefined;
+      const myReaction = userId
+        ? reactionMap.get(paper.id) ?? {
+          isLiked:   false,
+          isUnliked: false,
+        }
+        : undefined;
 
       return {
         id:              paper.id,
