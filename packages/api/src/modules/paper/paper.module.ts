@@ -1,58 +1,65 @@
 import { Module } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
-import { PrismaModule } from '@/common/modules/prisma';
 import { ConfigModule } from '@nestjs/config';
-
-// Commands
-import { CreatePaperHandler, DeletePaperHandler } from './application/commands';
-
-// Queries
-import {
-  GetPaperDetailHandler,
-  ListPapersHandler,
-  GetCategoriesHandler,
-  ListPapersByCategoryHandler,
-} from './application/queries';
-
-// Facades
+import { CqrsModule } from '@nestjs/cqrs';
+import { CrawlerAuthGuard } from '@/common/guards';
+import { PrismaModule } from '@/common/modules/prisma';
+import { AssetModule } from '../asset';
+import { UserModule } from '../user/user.module';
+import { CreatePaperHandler, DeletePaperHandler, RecordPaperViewHandler } from './application/commands';
 import { PaperFacade } from './application/facades';
-
-// Infrastructure
-import { PaperRepository } from './infrastructure/persistence';
+import {
+  GetCategoriesHandler,
+  GetHeadlinePapersHandler,
+  GetLatestPapersHandler,
+  GetMyDiscussedPapersHandler,
+  GetMyReactedPapersHandler,
+  GetPaperDetailHandler,
+  GetPopularPapersHandler,
+  ListPapersByCategoryHandler,
+  ListPapersHandler,
+} from './application/queries';
 import { PaperRepositoryPort } from './domain/repositories';
-
-// Presentation
+import { PaperRepository } from './infrastructure/persistence';
 import { PaperController, PaperCrawlerController } from './presentation/controllers';
 import { PaperRelationController } from './presentation/controllers/paper-relation.controller';
 
-// Guards
-import { CrawlerAuthGuard } from '@/common/guards';
-import { UserModule } from '../user/user.module';
-import { AssetModule } from '../asset';
-
-const commandHandlers = [CreatePaperHandler, DeletePaperHandler];
+const commandHandlers = [
+  CreatePaperHandler,
+  DeletePaperHandler,
+  RecordPaperViewHandler,
+];
 
 const queryHandlers = [
   GetPaperDetailHandler,
   ListPapersHandler,
   GetCategoriesHandler,
   ListPapersByCategoryHandler,
+  GetHeadlinePapersHandler,
+  GetPopularPapersHandler,
+  GetLatestPapersHandler,
+  GetMyReactedPapersHandler,
+  GetMyDiscussedPapersHandler,
 ];
 
 @Module({
-  imports: [CqrsModule, PrismaModule, ConfigModule, UserModule, AssetModule],
+  imports: [
+    CqrsModule, PrismaModule, ConfigModule, UserModule, AssetModule,
+  ],
   providers: [
     ...commandHandlers,
     ...queryHandlers,
     PaperFacade,
     {
-      provide: PaperRepositoryPort,
+      provide:  PaperRepositoryPort,
       useClass: PaperRepository,
     },
     CrawlerAuthGuard,
   ],
-  controllers: [PaperController, PaperCrawlerController, PaperRelationController],
+  controllers: [
+    PaperController, PaperCrawlerController, PaperRelationController,
+  ],
   exports: [PaperFacade],
 })
-export class PaperModule {}
+export class PaperModule {
+}
 

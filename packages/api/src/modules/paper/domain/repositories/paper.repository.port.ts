@@ -40,6 +40,9 @@ export abstract class PaperRepositoryPort {
   abstract incrementViewCount(id: string): Promise<void>;
   abstract getCategories(): Promise<CategoryWithCount[]>;
   abstract findByCategory(category: string, options: PaperListOptions): Promise<PaginatedPapers>;
+  abstract getHeadlinePapers(limit: number): Promise<PaperEntity[]>;
+  abstract getPopularPapers(limit: number, days?: number): Promise<PaperEntity[]>;
+  abstract getLatestPapers(limit: number): Promise<PaperEntity[]>;
 }
 
 

@@ -156,6 +156,91 @@ export class PaperRepository implements PaperRepositoryPort {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  async getHeadlinePapers(limit: number): Promise<PaperEntity[]> {
+    // 최근 7일 내 추가 + 인기도 점수 상위
+    const sevenDaysAgo = new Date();
+
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const papers = await this.prisma.$queryRaw<Array<{
+      id: string;
+      paperId: string;
+      title: string;
+      categories: string[];
+      authors: string[];
+      summary: string;
+      content: Prisma.JsonValue;
+      doi: string;
+      url: string | null;
+      pdfUrl: string | null;
+      issuedAt: Date | null;
+      likeCount: number;
+      unlikeCount: number;
+      totalViewCount: number;
+      thumbnailId: string | null;
+      pdfId: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>>`
+      SELECT *
+      FROM "Paper"
+      WHERE "createdAt" >= ${sevenDaysAgo}
+      ORDER BY (("likeCount" * 2) + "totalViewCount") DESC, "createdAt" DESC
+      LIMIT ${limit}
+    `;
+
+    return papers.map(paper => PaperMapper.toDomain(paper));
+  }
+
+  async getPopularPapers(limit: number, days: number = 90): Promise<PaperEntity[]> {
+    // 최근 N일 내 논문 중 인기도 점수 상위
+    const daysAgo = new Date();
+
+    daysAgo.setDate(daysAgo.getDate() - days);
+
+    const papers = await this.prisma.$queryRaw<Array<{
+      id: string;
+      paperId: string;
+      title: string;
+      categories: string[];
+      authors: string[];
+      summary: string;
+      content: Prisma.JsonValue;
+      doi: string;
+      url: string | null;
+      pdfUrl: string | null;
+      issuedAt: Date | null;
+      likeCount: number;
+      unlikeCount: number;
+      totalViewCount: number;
+      thumbnailId: string | null;
+      pdfId: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>>`
+      SELECT *
+      FROM "Paper"
+      WHERE "createdAt" >= ${daysAgo}
+      ORDER BY (("likeCount" * 2) + "totalViewCount") DESC, "createdAt" DESC
+      LIMIT ${limit}
+    `;
+
+    return papers.map(paper => PaperMapper.toDomain(paper));
+  }
+
+  async getLatestPapers(limit: number): Promise<PaperEntity[]> {
+    // 발행일(issuedAt) 최신순, 없으면 createdAt 최신순
+    const papers = await this.prisma.paper.findMany({
+      take: limit,
+      orderBy: [
+        { issuedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    return papers.map(paper => PaperMapper.toDomain(paper));
+  }
 }
 
 

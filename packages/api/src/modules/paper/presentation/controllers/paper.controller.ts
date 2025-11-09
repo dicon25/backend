@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -11,6 +12,7 @@ import { User } from '@scholub/database';
 import { Request } from 'express';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
 import { PaperFacade } from '@/modules/paper/application/facades';
+import { PaperEntity } from '@/modules/paper/domain/entities';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
 import { Public } from '@/modules/user/presentation/decorators';
 import {
@@ -19,32 +21,12 @@ import {
   PaperDetailDto,
   PaperListDto,
 } from '../dtos';
+import { RecordPaperViewResponseDto } from '../dtos/response/record-paper-view-response.dto';
 
 @ApiTags('Papers')
 @Controller('papers')
 export class PaperController {
   constructor(private readonly paperFacade: PaperFacade) {
-  }
-
-  @Get()
-  @ApiOperation({
-    summary:     'Get papers list with pagination and filters',
-    description: '논문 목록을 페이지네이션과 필터를 사용하여 조회합니다. 카테고리, 저자, 연도, 검색어로 필터링할 수 있으며, 정렬 옵션(정렬 기준 및 정렬 순서)을 지정할 수 있습니다. 기본값은 페이지 1, 페이지당 20개 항목입니다.',
-  })
-  @ApiResponseType({ type: PaperListDto })
-  async listPapers(@Query() query: ListPapersDto) {
-    return await this.paperFacade.listPapers({
-      page:      query.page ?? 1,
-      limit:     query.limit ?? 20,
-      sortBy:    query.sortBy,
-      sortOrder: query.sortOrder,
-      filters:   {
-        categories:  query.categories,
-        authors:     query.authors,
-        year:        query.year,
-        searchQuery: query.searchQuery,
-      },
-    });
   }
 
   @Get('categories')
@@ -73,6 +55,132 @@ export class PaperController {
       sortBy:    query.sortBy,
       sortOrder: query.sortOrder,
     });
+  }
+
+  @Get('headlines')
+  @Public()
+  @ApiOperation({
+    summary:     'Get headline papers',
+    description: '헤드라인 논문 목록을 조회합니다. 최근 7일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 4개입니다.',
+  })
+  @ApiResponseType({
+    type:    PaperDetailDto,
+    isArray: true,
+  })
+  async getHeadlinePapers(@Query('limit') limit?: number) {
+    const papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
+
+    return papers.map(paper => this.mapToDto(paper));
+  }
+
+  @Get('popular')
+  @Public()
+  @ApiOperation({
+    summary:     'Get popular papers',
+    description: '인기 논문 목록을 조회합니다. 최근 90일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 20개입니다.',
+  })
+  @ApiResponseType({
+    type:    PaperDetailDto,
+    isArray: true,
+  })
+  async getPopularPapers(@Query('limit') limit?: number, @Query('days') days?: number) {
+    const papers = await this.paperFacade.getPopularPapers(limit ?? 20, days ?? 90);
+
+    return papers.map(paper => this.mapToDto(paper));
+  }
+
+  @Get('latest')
+  @Public()
+  @ApiOperation({
+    summary:     'Get latest papers',
+    description: '최신 연구 논문 목록을 조회합니다. 발행일(issuedAt) 기준으로 최신순으로 정렬하며, 발행일이 없는 경우 생성일(createdAt) 기준으로 정렬합니다. 기본값은 20개입니다.',
+  })
+  @ApiResponseType({
+    type:    PaperDetailDto,
+    isArray: true,
+  })
+  async getLatestPapers(@Query('limit') limit?: number) {
+    const papers = await this.paperFacade.getLatestPapers(limit ?? 20);
+
+    return papers.map(paper => this.mapToDto(paper));
+  }
+
+  private mapToDto(paper: PaperEntity): PaperDetailDto {
+    return {
+      id:             paper.id,
+      paperId:        paper.paperId,
+      title:          paper.title,
+      categories:     paper.categories,
+      authors:        paper.authors,
+      summary:        paper.summary,
+      content:        paper.content,
+      doi:            paper.doi,
+      url:            paper.url,
+      pdfUrl:         paper.pdfUrl,
+      issuedAt:       paper.issuedAt,
+      likeCount:      paper.likeCount,
+      unlikeCount:    paper.unlikeCount,
+      totalViewCount: paper.totalViewCount,
+      thumbnailId:    paper.thumbnailId,
+      pdfId:          paper.pdfId,
+      createdAt:      paper.createdAt,
+      updatedAt:      paper.updatedAt,
+    };
+  }
+
+  @Get('me/reacted')
+  @ApiOperation({
+    summary:     'Get my reacted papers',
+    description: '현재 로그인한 사용자가 반응(좋아요/싫어요)을 누른 논문 목록을 조회합니다. 최근 반응한 순서로 정렬됩니다.',
+  })
+  @ApiResponseType({
+    type:    PaperDetailDto,
+    isArray: true,
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async getMyReactedPapers(@Req() req: Request & {
+    user: User;
+  }) {
+    const papers = await this.paperFacade.getMyReactedPapers(req.user.id);
+
+    return papers.map(paper => this.mapToDto(paper));
+  }
+
+  @Get('me/discussed')
+  @ApiOperation({
+    summary:     'Get my discussed papers',
+    description: '현재 로그인한 사용자가 토론에 참여한 논문 목록을 조회합니다. 최근 토론 참여 순서로 정렬됩니다.',
+  })
+  @ApiResponseType({
+    type:    PaperDetailDto,
+    isArray: true,
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async getMyDiscussedPapers(@Req() req: Request & {
+    user: User;
+  }) {
+    const papers = await this.paperFacade.getMyDiscussedPapers(req.user.id);
+
+    return papers.map(paper => this.mapToDto(paper));
+  }
+
+  @Post(':paperId/view')
+  @Public()
+  @ApiOperation({
+    summary:     'Record paper view',
+    description: '사용자가 논문을 본 것으로 기록합니다. 클라이언트에서 논문 상세 페이지에 5분 이상 머무른 경우 호출합니다. 로그인한 사용자의 경우 사용자 ID가 함께 저장되며, 비로그인 사용자의 경우 논문 조회수만 증가합니다.',
+  })
+  @ApiResponseType({ type: RecordPaperViewResponseDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async recordPaperView(@Param('paperId') paperId: string, @Req() req: Request & {
+    user?: User;
+  }) {
+    const userId = req.user?.id;
+
+    return await this.paperFacade.recordPaperView(paperId, userId);
   }
 
   @Get(':paperId')
