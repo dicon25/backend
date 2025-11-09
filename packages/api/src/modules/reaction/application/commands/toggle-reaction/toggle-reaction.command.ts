@@ -1,9 +1,9 @@
+import { DataClass } from 'dataclasses';
 import { ReactionType } from '../../../domain/entities';
 
-export class ToggleReactionCommand {
-  constructor(public readonly userId: string,
-    public readonly paperId: string,
-    public readonly type: ReactionType) {
-  }
+export class ToggleReactionCommand extends DataClass {
+  userId:  string;
+  paperId: string;
+  type:    ReactionType;
 }
 

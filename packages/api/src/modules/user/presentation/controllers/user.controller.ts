@@ -91,7 +91,11 @@ export class UserController {
   async updateProfile(@CurrentUser() user: UserEntity,
     @Body() dto: UpdateProfileDto,
     @UploadedFile() profilePicture?: Express.Multer.File): Promise<UserDetailResponseDto> {
-    const command = new UpdateProfileCommand(user.id, dto.name, profilePicture);
+    const command = UpdateProfileCommand.from({
+      userId:         user.id,
+      name:            dto.name,
+      profilePicture:  profilePicture,
+    });
     const result = await this.commandBus.execute<UpdateProfileCommand, UpdateProfileResult>(command);    // Get updated user detail with profile image URL
     const query = UserDetailQuery.from({ id: result.user.id });
     const detailResult = await this.queryBus.execute<UserDetailQuery, UserDetailResult>(query);

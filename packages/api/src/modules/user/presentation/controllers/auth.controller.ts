@@ -99,13 +99,13 @@ export class AuthController {
   })
   async register(@Body() dto: RegisterDto,
     @UploadedFile() profilePicture?: Express.Multer.File): Promise<LoginResponseDto> {
-    const command = new RegisterCommand(
-      dto.email,
-      dto.password,
-      dto.name,
-      profilePicture,
-      dto.interestedCategories,
-    );
+    const command = RegisterCommand.from({
+      email:                dto.email,
+      password:             dto.password,
+      name:                 dto.name,
+      profilePicture:       profilePicture,
+      interestedCategories:  dto.interestedCategories,
+    });
 
     const result = await this.commandBus.execute<RegisterCommand, RegisterResult>(command);
 
@@ -127,7 +127,10 @@ export class AuthController {
     errors:      [401, 500],
   })
   async login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
-    const command = new LoginCommand(dto.email, dto.password);
+    const command = LoginCommand.from({
+      email:    dto.email,
+      password: dto.password,
+    });
     const result = await this.commandBus.execute<LoginCommand, LoginResult>(command);
 
     return LoginResponseDto.from({

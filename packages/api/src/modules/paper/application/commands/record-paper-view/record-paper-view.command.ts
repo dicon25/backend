@@ -1,6 +1,7 @@
-export class RecordPaperViewCommand {
-  constructor(public readonly paperId: string,
-    public readonly userId?: string) {
-  }
+import { DataClass } from 'dataclasses';
+
+export class RecordPaperViewCommand extends DataClass {
+  paperId: string;
+  userId?: string;
 }
 

@@ -16,7 +16,9 @@ export class ReactionFacade {
     type: ReactionType): Promise<{
     action: 'created' | 'deleted';
   }> {
-    return await this.commandBus.execute(new ToggleReactionCommand(userId, paperId, type));
+    return await this.commandBus.execute(ToggleReactionCommand.from({
+      userId, paperId, type,
+    }));
   }
 
   async getPaperReactions(paperId: string): Promise<ReactionStats> {

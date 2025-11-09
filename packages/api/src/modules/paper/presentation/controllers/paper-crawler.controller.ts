@@ -200,23 +200,23 @@ export class PaperCrawlerController {
       throw new BadRequestException('Either pdfId or pdf file must be provided');
     }
 
-    const command = new CreatePaperCommand(
-      dto.paperId,
-      dto.title,
-      dto.categories,
-      dto.authors,
-      dto.summary,
-      dto.translatedSummary,
-      dto.content,
-      dto.doi,
-      pdfId,
-      dto.url,
-      dto.pdfUrl,
-      dto.issuedAt ? new Date(dto.issuedAt) : undefined,
-      thumbnailId,
-      dto.hashtags,
-      dto.interestedUserIds,
-    );
+    const command = CreatePaperCommand.from({
+      paperId:           dto.paperId,
+      title:             dto.title,
+      categories:        dto.categories,
+      authors:           dto.authors,
+      summary:           dto.summary,
+      translatedSummary: dto.translatedSummary,
+      content:           dto.content,
+      doi:               dto.doi,
+      pdfId:             pdfId,
+      url:               dto.url,
+      pdfUrl:            dto.pdfUrl,
+      issuedAt:          dto.issuedAt ? new Date(dto.issuedAt) : undefined,
+      thumbnailId:       thumbnailId,
+      hashtags:          dto.hashtags,
+      interestedUserIds: dto.interestedUserIds,
+    });
 
     const createStart = Date.now();
     const result = await this.paperFacade.createPaper(command);

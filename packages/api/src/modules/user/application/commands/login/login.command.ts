@@ -1,6 +1,7 @@
-export class LoginCommand {
-  constructor(public readonly email: string,
-    public readonly password: string) {
-  }
+import { DataClass } from 'dataclasses';
+
+export class LoginCommand extends DataClass {
+  email:    string;
+  password: string;
 }
 

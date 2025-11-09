@@ -33,7 +33,7 @@ export class PaperFacade {
   }
 
   async deletePaper(paperId: string): Promise<void> {
-    return await this.commandBus.execute(new DeletePaperCommand(paperId));
+    return await this.commandBus.execute(DeletePaperCommand.from({ paperId }));
   }
 
   async getPaperDetail(paperId: string,
@@ -66,7 +66,9 @@ export class PaperFacade {
   }
 
   async recordPaperView(paperId: string, userId?: string): Promise<RecordPaperViewResult> {
-    return await this.commandBus.execute(new RecordPaperViewCommand(paperId, userId));
+    return await this.commandBus.execute(RecordPaperViewCommand.from({
+      paperId, userId,
+    }));
   }
 
   async getMyReactedPapers(userId: string): Promise<any[]> {

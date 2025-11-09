@@ -1,5 +1,6 @@
-export class DeletePaperCommand {
-  constructor(public readonly paperId: string) {
-  }
+import { DataClass } from 'dataclasses';
+
+export class DeletePaperCommand extends DataClass {
+  paperId: string;
 }
 

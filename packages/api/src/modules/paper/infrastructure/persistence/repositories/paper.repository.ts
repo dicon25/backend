@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@scholub/database';
 import { PrismaService } from '@/common/modules/prisma';
-import { PaperEntity } from '../../../domain/entities';
+import { PaperEntity } from '@/modules/paper/domain/entities';
 import {
   CategoryWithCount,
   PaginatedPapers,
   PaperListOptions,
   PaperRepositoryPort,
-} from '../../../domain/repositories';
-import { PaperSearchRepository, PaperSyncService } from '../../search/elasticsearch';
+} from '@/modules/paper/domain/repositories';
+import { PaperSearchRepository, PaperSyncService } from '@/modules/paper/infrastructure/search/elasticsearch';
 import { PaperMapper } from '../mappers';
 
 @Injectable()
@@ -70,7 +70,8 @@ export class PaperRepository implements PaperRepositoryPort {
       filters,
     } = options;
 
-    const skip = (page - 1) * limit;    const where: Prisma.PaperWhereInput = {};
+    const skip = (page - 1) * limit;
+    const where: Prisma.PaperWhereInput = {};
 
     if (filters?.categories && filters.categories.length > 0) {
       where.categories = { hasSome: filters.categories };
@@ -169,7 +170,8 @@ export class PaperRepository implements PaperRepositoryPort {
   }
 
   async getCategories(): Promise<CategoryWithCount[]> {
-    const papers = await this.prisma.paper.findMany({ select: { categories: true } });    const categoryMap = new Map<string, number>;
+    const papers = await this.prisma.paper.findMany({ select: { categories: true } });
+    const categoryMap = new Map<string, number>;
 
     papers.forEach(paper => {
       paper.categories.forEach(category => {
@@ -192,7 +194,8 @@ export class PaperRepository implements PaperRepositoryPort {
       sortOrder = 'desc',
     } = options;
 
-    const skip = (page - 1) * limit;    const where: Prisma.PaperWhereInput = { categories: { has: category } };
+    const skip = (page - 1) * limit;
+    const where: Prisma.PaperWhereInput = { categories: { has: category } };
 
     const [papers, total] = await Promise.all([
       this.prisma.paper.findMany({
@@ -220,25 +223,26 @@ export class PaperRepository implements PaperRepositoryPort {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const papers = await this.prisma.$queryRaw<Array<{
-      id:             string;
-      paperId:        string;
-      title:          string;
-      categories:     string[];
-      authors:        string[];
-      summary:        string;
-      content:        Prisma.JsonValue;
-      hashtags:       string[];
-      doi:            string;
-      url:            string | null;
-      pdfUrl:         string | null;
-      issuedAt:       Date | null;
-      likeCount:      number;
-      unlikeCount:    number;
-      totalViewCount: number;
-      thumbnailId:    string | null;
-      pdfId:          string;
-      createdAt:      Date;
-      updatedAt:      Date;
+      id:                string;
+      paperId:           string;
+      title:             string;
+      categories:        string[];
+      authors:           string[];
+      summary:           string;
+      translatedSummary: string | null;
+      content:           Prisma.JsonValue;
+      hashtags:          string[];
+      doi:               string;
+      url:               string | null;
+      pdfUrl:            string | null;
+      issuedAt:          Date | null;
+      likeCount:         number;
+      unlikeCount:       number;
+      totalViewCount:    number;
+      thumbnailId:       string | null;
+      pdfId:             string;
+      createdAt:         Date;
+      updatedAt:         Date;
     }>>`
       SELECT *
       FROM "Paper"
@@ -251,31 +255,31 @@ export class PaperRepository implements PaperRepositoryPort {
   }
 
   async getPopularPapers(limit: number, days: number = 90): Promise<PaperEntity[]> {
-    // 최근 N일 내 논문 중 인기도 점수 상위
     const daysAgo = new Date;
 
     daysAgo.setDate(daysAgo.getDate() - days);
 
     const papers = await this.prisma.$queryRaw<Array<{
-      id:             string;
-      paperId:        string;
-      title:          string;
-      categories:     string[];
-      authors:        string[];
-      summary:        string;
-      content:        Prisma.JsonValue;
-      hashtags:       string[];
-      doi:            string;
-      url:            string | null;
-      pdfUrl:         string | null;
-      issuedAt:       Date | null;
-      likeCount:      number;
-      unlikeCount:    number;
-      totalViewCount: number;
-      thumbnailId:    string | null;
-      pdfId:          string;
-      createdAt:      Date;
-      updatedAt:      Date;
+      id:                string;
+      paperId:           string;
+      title:             string;
+      categories:        string[];
+      authors:           string[];
+      summary:           string;
+      translatedSummary: string | null;
+      content:           Prisma.JsonValue;
+      hashtags:          string[];
+      doi:               string;
+      url:               string | null;
+      pdfUrl:            string | null;
+      issuedAt:          Date | null;
+      likeCount:         number;
+      unlikeCount:       number;
+      totalViewCount:    number;
+      thumbnailId:       string | null;
+      pdfId:             string;
+      createdAt:         Date;
+      updatedAt:         Date;
     }>>`
       SELECT *
       FROM "Paper"

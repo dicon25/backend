@@ -1,7 +1,8 @@
-export class UpdateProfileCommand {
-  constructor(public readonly userId: string,
-    public readonly name?: string,
-    public readonly profilePicture?: Express.Multer.File) {
-  }
+import { DataClass } from 'dataclasses';
+
+export class UpdateProfileCommand extends DataClass {
+  userId:         string;
+  name?:          string;
+  profilePicture?: Express.Multer.File;
 }
 
