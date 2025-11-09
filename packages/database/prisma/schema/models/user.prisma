@@ -19,6 +19,8 @@ model User {
   paperViews    PaperView[]
   notifications Notification[]
 
+  relatedUserNotifications Notification[] @relation("RelatedUserNotifications")
+
   userRecommendations UserRecommendation[]
 
   chatSessions   ChatSession[]

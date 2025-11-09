@@ -77,7 +77,7 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
 
             if (user) {
               const previousUserHashtags = user.hashtags ?? [];
-              const updatedHashtags = Array.from(new Set([...previousUserHashtags, ...command.hashtags]));
+              const updatedHashtags = Array.from(new Set([...previousUserHashtags, ...(command.hashtags ?? [])]));
 
               await this.prisma.user.update({
                 where: { id: userId },

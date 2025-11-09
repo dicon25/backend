@@ -116,14 +116,6 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
     // Remove the message author from notification recipients
     participantUserIds.delete(command.userId);
 
-    // Get paper title for notification
-    const paper = await this.prisma.paper.findUnique({
-      where: { id: discussion.paperId },
-      select: { title: true },
-    });
-
-    const paperTitle = paper?.title ?? '논문';
-    const notificationTitle = `토론에 새 메시지가 추가되었습니다`;
     const notificationMessage = `"${discussion.title}" 토론에 새 메시지가 추가되었습니다.`;
 
     // Create notifications for all participants
@@ -132,11 +124,9 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
         data: Array.from(participantUserIds).map(userId => ({
           userId,
           type: 'DISCUSSION_ACTIVITY',
-          title: notificationTitle,
           message: notificationMessage,
           relatedPaperId: discussion.paperId,
           relatedUserId: command.userId,
-          priority: 'NORMAL',
         })),
       });
     }

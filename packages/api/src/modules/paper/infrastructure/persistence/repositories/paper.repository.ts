@@ -171,6 +171,7 @@ export class PaperRepository implements PaperRepositoryPort {
       authors: string[];
       summary: string;
       content: Prisma.JsonValue;
+      hashtags: string[];
       doi: string;
       url: string | null;
       pdfUrl: string | null;
@@ -207,6 +208,7 @@ export class PaperRepository implements PaperRepositoryPort {
       authors: string[];
       summary: string;
       content: Prisma.JsonValue;
+      hashtags: string[];
       doi: string;
       url: string | null;
       pdfUrl: string | null;
