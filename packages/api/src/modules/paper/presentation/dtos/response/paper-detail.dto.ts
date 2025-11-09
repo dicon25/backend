@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Prisma } from '@scholub/database';
 
 export class MyReactionDto {
   @ApiProperty({ description: 'Has user liked this paper' })
@@ -31,7 +32,7 @@ export class PaperDetailDto {
   translatedSummary?: string;
 
   @ApiProperty()
-  content: any;
+  content: Prisma.JsonValue;
 
   @ApiProperty()
   doi: string;

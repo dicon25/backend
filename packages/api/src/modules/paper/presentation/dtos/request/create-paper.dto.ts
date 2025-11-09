@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Prisma } from '@scholub/database';
 import { Transform } from 'class-transformer';
 import {
   IsArray,
@@ -80,7 +81,7 @@ export class CreatePaperDto {
     return value;
   })
   @IsNotEmpty()
-  content: any;
+  content: Prisma.JsonValue;
 
   @ApiProperty({ description: 'DOI' })
   @IsString()

@@ -1,9 +1,9 @@
 import { QueryDslBoolQuery, QueryDslQueryContainer, SortCombinations } from '@elastic/elasticsearch/lib/api/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
-import { PaperSortBy, SortOrder } from '../../../domain/enums';
-import { PaginatedPapers, PaperListOptions } from '../../../domain/repositories';
-import { PaperMapper } from '../../persistence/mappers';
+import { PaperSortBy, SortOrder } from '@/modules/paper/domain/enums';
+import { PaginatedPapers, PaperListOptions } from '@/modules/paper/domain/repositories';
+import { PaperMapper } from '@/modules/paper/infrastructure/persistence/mappers';
 import { ElasticsearchService } from './elasticsearch.service';
 import { PaperIndexService } from './paper-index.service';
 
@@ -42,7 +42,6 @@ export class PaperSearchRepository {
     try {
       await this.paperIndexService.ensureIndexExists();
 
-      // Build query
       const boolQuery: QueryDslBoolQuery = {
         must:   [] as QueryDslQueryContainer[],
         filter: [] as QueryDslQueryContainer[],
@@ -50,7 +49,6 @@ export class PaperSearchRepository {
 
       const query: QueryDslQueryContainer = { bool: boolQuery };
 
-      // Search query
       if (filters?.searchQuery) {
         (boolQuery.must as QueryDslQueryContainer[]).push({ multi_match: {
           query:  filters.searchQuery,
@@ -67,11 +65,9 @@ export class PaperSearchRepository {
           max_expansions: 50,
         } });
       } else {
-        // Match all if no search query
         (boolQuery.must as QueryDslQueryContainer[]).push({ match_all: {} });
       }
 
-      // Filters
       if (filters?.categories && filters.categories.length > 0) {
         (boolQuery.filter as QueryDslQueryContainer[]).push({ terms: { categories: filters.categories } });
       }
@@ -87,10 +83,8 @@ export class PaperSearchRepository {
         } } });
       }
 
-      // Build sort
       const sort: SortCombinations[] = [];
 
-      // Map PaperSortBy to Elasticsearch field
       let sortField: string;
 
       switch (sortBy) {
@@ -119,12 +113,10 @@ export class PaperSearchRepository {
 
       sort.push({ [sortField]: { order: sortOrder === SortOrder.ASC ? 'asc' : 'desc' } });
 
-      // If there's a search query, also sort by relevance score
       if (filters?.searchQuery) {
         sort.push({ _score: { order: 'desc' } });
       }
 
-      // Execute search
       const response = await client.search({
         index: indexName,
         query,
@@ -133,14 +125,12 @@ export class PaperSearchRepository {
         size:  limit,
       });
 
-      // Handle total count (Elasticsearch 8.x returns object with value property)
       const total = typeof response.hits.total === 'number'
         ? response.hits.total
         : response.hits.total?.value ?? 0;
 
       const hits = response.hits.hits;
 
-      // Get paper IDs from Elasticsearch results
       const paperIds = hits.map(hit => {
         const source = hit._source as {
           id: string;
@@ -149,16 +139,11 @@ export class PaperSearchRepository {
         return source.id;
       });
 
-      /*
-       * Fetch full paper data from PostgreSQL
-       * This ensures we get all fields including content, pdfId, etc.
-       */
       const papers = await this.prisma.paper.findMany({
         where:   { id: { in: paperIds } },
         orderBy: paperIds.length > 0 ? { id: 'asc' } : { [sortField]: sortOrder },
       });
 
-      // Reorder papers to match Elasticsearch results
       const paperMap = new Map(papers.map(p => [p.id, p]));
 
       const orderedPapers = paperIds
