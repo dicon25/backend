@@ -51,7 +51,7 @@ export class AuthController {
   })))
   @ApiOperation({
     summary: 'Register a new user',
-    description: '새로운 사용자 계정을 생성합니다. 이메일, 비밀번호, 이름을 필수로 입력받으며, 프로필 사진은 선택사항입니다. 회원가입 성공 시 자동으로 로그인되어 액세스 토큰과 리프레시 토큰을 반환합니다. 프로필 사진은 최대 5MB까지 업로드 가능하며, JPG, JPEG, PNG, GIF, WEBP 형식을 지원합니다.',
+    description: '새로운 사용자 계정을 생성합니다. 이메일, 비밀번호, 이름을 필수로 입력받으며, 관심있는 분야 목록과 프로필 사진은 선택사항입니다. 회원가입 성공 시 자동으로 로그인되어 액세스 토큰과 리프레시 토큰을 반환합니다. 프로필 사진은 최대 5MB까지 업로드 가능하며, JPG, JPEG, PNG, GIF, WEBP 형식을 지원합니다.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: {
@@ -70,6 +70,16 @@ export class AuthController {
       name: {
         type:    'string',
         example: 'John Doe',
+      },
+      interestedCategories: {
+        type:        'array',
+        items:       { type: 'string' },
+        description: '관심있는 분야 목록 (선택사항). 예: ["Machine Learning", "Computer Vision"]',
+        example:     [
+          'Machine Learning',
+          'Computer Vision',
+        ],
+        required:    false,
       },
       profilePicture: {
         type:        'string',
@@ -90,7 +100,13 @@ export class AuthController {
   })
   async register(@Body() dto: RegisterDto,
     @UploadedFile() profilePicture?: Express.Multer.File): Promise<LoginResponseDto> {
-    const command = new RegisterCommand(dto.email, dto.password, dto.name, profilePicture);
+    const command = new RegisterCommand(
+      dto.email,
+      dto.password,
+      dto.name,
+      profilePicture,
+      dto.interestedCategories,
+    );
     const result = await this.commandBus.execute<RegisterCommand, RegisterResult>(command);
 
     return LoginResponseDto.from({

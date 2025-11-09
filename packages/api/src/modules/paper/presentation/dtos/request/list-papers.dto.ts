@@ -8,7 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { PaperSortBy, SortOrder } from '../../../domain/enums';
+import { PaperSortBy, SortOrder } from '@/modules/paper/domain/enums';
 
 export class ListPapersDto {
   @ApiProperty({

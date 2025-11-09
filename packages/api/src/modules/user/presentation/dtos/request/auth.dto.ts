@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsEmail, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsOptional, MinLength, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -17,6 +18,27 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiProperty({
+    description: '관심있는 분야 목록 (선택사항)',
+    type: [String],
+    required: false,
+    example: ['Machine Learning', 'Computer Vision'],
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+      }
+    }
+    return Array.isArray(value) ? value : [];
+  })
+  @IsArray()
+  @IsString({ each: true })
+  interestedCategories?: string[];
 }
 
 export class LoginDto {

@@ -73,6 +73,14 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
       },
     });
 
+    // Create user preference with interested categories
+    await this.prisma.userPreference.create({
+      data: {
+        userId: user.id,
+        interestedCategories: command.interestedCategories || [],
+      },
+    });
+
     // Generate tokens
     const accessTokenPayload: JwtPayload = {
       sub: user.id,
