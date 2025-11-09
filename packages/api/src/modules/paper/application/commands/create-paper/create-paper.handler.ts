@@ -5,6 +5,7 @@ import { PaperRepositoryPort } from '../../../domain/repositories';
 import { PaperEntity } from '../../../domain/entities';
 import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
+import { PaperSyncService } from '../../../infrastructure/search/elasticsearch';
 
 @CommandHandler(CreatePaperCommand)
 export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
@@ -13,6 +14,7 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
   constructor(
     private readonly paperRepository: PaperRepositoryPort,
     private readonly prisma: PrismaService,
+    private readonly paperSyncService: PaperSyncService,
   ) {}
 
   async execute(command: CreatePaperCommand): Promise<PaperEntity> {
@@ -88,6 +90,14 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
         );
         this.logger.log(`[CreatePaperHandler] User hashtags updated in ${Date.now() - hashtagUpdateStart}ms`);
       }
+    }
+
+    // Index paper in Elasticsearch
+    try {
+      await this.paperSyncService.indexPaper(result);
+    } catch (error) {
+      this.logger.warn(`Failed to index paper in Elasticsearch: ${result.id}`, error);
+      // Don't throw - allow the operation to continue even if indexing fails
     }
 
     return result;

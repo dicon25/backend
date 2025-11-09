@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
 import {
   CategoryWithCount,
@@ -9,10 +9,17 @@ import {
 import { PaperEntity } from '../../../domain/entities';
 import { PaperMapper } from '../mappers';
 import { Prisma } from '@scholub/database';
+import { PaperSearchRepository, PaperSyncService } from '../../search/elasticsearch';
 
 @Injectable()
 export class PaperRepository implements PaperRepositoryPort {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PaperRepository.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paperSearchRepository: PaperSearchRepository | null,
+    private readonly paperSyncService: PaperSyncService | null,
+  ) {}
 
   async create(paper: Partial<PaperEntity>): Promise<PaperEntity> {
     const data = PaperMapper.toPersistence(paper);
@@ -44,6 +51,21 @@ export class PaperRepository implements PaperRepositoryPort {
   }
 
   async list(options: PaperListOptions): Promise<PaginatedPapers> {
+    // Use Elasticsearch if searchQuery is provided and Elasticsearch is available
+    if (options.filters?.searchQuery && this.paperSearchRepository) {
+      try {
+        return await this.paperSearchRepository.search(options);
+      } catch (error) {
+        this.logger.warn('Elasticsearch search failed, falling back to PostgreSQL', error);
+        // Fall through to PostgreSQL search
+      }
+    }
+
+    // Fallback to PostgreSQL search
+    return await this.prismaSearch(options);
+  }
+
+  private async prismaSearch(options: PaperListOptions): Promise<PaginatedPapers> {
     const { page, limit, sortBy = 'createdAt', sortOrder = 'desc', filters } = options;
     const skip = (page - 1) * limit;
 
@@ -97,7 +119,19 @@ export class PaperRepository implements PaperRepositoryPort {
       where: { id },
       data: updateData,
     });
-    return PaperMapper.toDomain(updated);
+    const result = PaperMapper.toDomain(updated);
+
+    // Update in Elasticsearch
+    if (this.paperSyncService) {
+      try {
+        await this.paperSyncService.updatePaper(id, data);
+      } catch (error) {
+        this.logger.warn(`Failed to update paper in Elasticsearch: ${id}`, error);
+        // Don't throw - allow the operation to continue even if indexing fails
+      }
+    }
+
+    return result;
   }
 
   async delete(id: string): Promise<void> {
@@ -111,6 +145,19 @@ export class PaperRepository implements PaperRepositoryPort {
       where: { id },
       data: { totalViewCount: { increment: 1 } },
     });
+
+    // Update view count in Elasticsearch
+    if (this.paperSyncService) {
+      try {
+        const paper = await this.findById(id);
+        if (paper) {
+          await this.paperSyncService.updatePaper(id, { totalViewCount: paper.totalViewCount });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to update view count in Elasticsearch: ${id}`, error);
+        // Don't throw - allow the operation to continue even if indexing fails
+      }
+    }
   }
 
   async getCategories(): Promise<CategoryWithCount[]> {

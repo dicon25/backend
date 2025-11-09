@@ -58,4 +58,11 @@ export const envValidationSchema = Joi.object({
   // AI Server Secret Key
   AI_SERVER_SECRET_KEY: Joi.string().min(32)
     .default('dev-ai-server-secret-key-change-in-production-min-32-chars'),
+
+  // Elasticsearch
+  ELASTICSEARCH_ENABLED: Joi.boolean().default(false),
+  ELASTICSEARCH_NODE: requiredWhen('ELASTICSEARCH_ENABLED', Joi.string().uri()),
+  ELASTICSEARCH_USERNAME: Joi.string().optional(),
+  ELASTICSEARCH_PASSWORD: Joi.string().optional(),
+  ELASTICSEARCH_INDEX_PAPERS: Joi.string().default('papers'),
 });

@@ -26,14 +26,16 @@ export class AssetFacade {
   async uploadAsset(file: Express.Multer.File,
     directory?: AssetDirectory | string): Promise<UploadAssetResult> {
     return this.commandBus.execute(UploadAssetCommand.from({
-      file, directory,
+      file,
+      path: directory,
     }));
   }
 
   async uploadMultipleAssets(files: Express.Multer.File[],
     directory?: AssetDirectory | string): Promise<UploadMultipleAssetsResult> {
     return this.commandBus.execute(UploadMultipleAssetsCommand.from({
-      files, directory,
+      files,
+      path: directory,
     }));
   }
 

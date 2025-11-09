@@ -143,6 +143,10 @@ export class PaperController {
   }
 
   private mapToDto(paper: PaperEntity, thumbnailMap?: Map<string, string>): PaperDetailDto {
+    const thumbnailUrl = paper.thumbnailId && thumbnailMap
+      ? thumbnailMap.get(paper.thumbnailId) ?? undefined
+      : undefined;
+
     return {
       id:             paper.id,
       paperId:        paper.paperId,
@@ -158,12 +162,10 @@ export class PaperController {
       likeCount:      paper.likeCount,
       unlikeCount:    paper.unlikeCount,
       totalViewCount: paper.totalViewCount,
-      thumbnailUrl:   paper.thumbnailId && thumbnailMap
-        ? thumbnailMap.get(paper.thumbnailId)
-        : undefined,
-      pdfId:     paper.pdfId,
-      createdAt: paper.createdAt,
-      updatedAt: paper.updatedAt,
+      thumbnailUrl,
+      pdfId:          paper.pdfId,
+      createdAt:      paper.createdAt,
+      updatedAt:      paper.updatedAt,
     };
   }
 

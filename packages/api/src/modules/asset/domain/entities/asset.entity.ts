@@ -12,8 +12,17 @@ export class AssetEntity extends DataClass {
   createdAt: Date;
 
   get url(): string {
+    const publicUrl = process.env.S3_PUBLIC_URL || '';
     const endpoint = process.env.S3_ENDPOINT || '';
     const bucket = process.env.S3_BUCKET_NAME || '';
+
+    if (publicUrl) {
+      if (publicUrl.endsWith('/')) {
+        return `${publicUrl}${this.key}`;
+      }
+
+      return `${publicUrl}/${this.key}`;
+    }
 
     if (endpoint.endsWith('/')) {
       return `${endpoint}${bucket}/${this.key}`;

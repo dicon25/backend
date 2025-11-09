@@ -17,7 +17,16 @@ export class GetAssetDetailHandler implements IQueryHandler<GetAssetDetailQuery,
       throw new NotFoundException(`Asset with id ${id} not found`);
     }
 
-    return GetAssetDetailResult.from(asset);
+    return GetAssetDetailResult.from({
+      id:               asset.id,
+      filename:         asset.filename,
+      originalFilename: asset.originalFilename,
+      contentType:      asset.contentType,
+      fileSize:         asset.fileSize,
+      key:              asset.key,
+      url:              asset.url, // Explicitly set url from getter
+      createdAt:        asset.createdAt,
+    });
   }
 }
 

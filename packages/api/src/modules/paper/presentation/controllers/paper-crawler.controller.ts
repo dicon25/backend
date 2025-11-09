@@ -153,7 +153,7 @@ export class PaperCrawlerController {
       const pdfUploadStart = Date.now();
       const pdfFile = files.pdf[0];
 
-      uploadPromises.push(this.assetFacade.uploadAsset(pdfFile, 'papers')
+      uploadPromises.push(this.assetFacade.uploadAsset(pdfFile, 'paper-pdf')
         .then(result => {
           pdfId = result.id;
 

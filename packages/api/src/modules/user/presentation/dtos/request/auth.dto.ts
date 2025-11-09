@@ -1,6 +1,13 @@
-import { IsString, IsNotEmpty, IsEmail, IsOptional, MinLength, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -8,7 +15,9 @@ export class RegisterDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'password123', minLength: 6 })
+  @ApiProperty({
+    example: 'password123', minLength: 6,
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(6)
@@ -21,9 +30,9 @@ export class RegisterDto {
 
   @ApiProperty({
     description: '관심있는 분야 목록 (선택사항)',
-    type: [String],
-    required: false,
-    example: ['Machine Learning', 'Computer Vision'],
+    type:        [String],
+    required:    false,
+    example:     ['Machine Learning', 'Computer Vision'],
   })
   @IsOptional()
   @Transform(({ value }) => {
@@ -31,14 +40,25 @@ export class RegisterDto {
       try {
         return JSON.parse(value);
       } catch {
-        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+        return value.split(',').map((item: string) => item.trim())
+          .filter(Boolean);
       }
     }
+
     return Array.isArray(value) ? value : [];
   })
   @IsArray()
   @IsString({ each: true })
   interestedCategories?: string[];
+
+  @ApiProperty({
+    description: 'Profile picture image file (optional)',
+    type:        'string',
+    format:      'binary',
+    required:    false,
+  })
+  @IsOptional()
+  profilePicture?: Express.Multer.File;
 }
 
 export class LoginDto {
