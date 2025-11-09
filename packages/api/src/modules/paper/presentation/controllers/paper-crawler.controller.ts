@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { CrawlerAuthGuard } from '@/common/guards';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { PrismaService } from '@/common/modules/prisma';
 import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
 import { AssetFacade } from '@/modules/asset/application/facades';
 import { CreatePaperCommand } from '@/modules/paper/application/commands';
@@ -36,7 +37,8 @@ export class PaperCrawlerController {
   private readonly logger = new Logger(PaperCrawlerController.name);
 
   constructor(private readonly paperFacade: PaperFacade,
-    private readonly assetFacade: AssetFacade) {
+    private readonly assetFacade: AssetFacade,
+    private readonly prisma: PrismaService) {
   }
 
   @Post()

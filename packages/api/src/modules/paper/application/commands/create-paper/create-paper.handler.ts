@@ -64,6 +64,30 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
         skipDuplicates: true,
       });
       this.logger.log(`[CreatePaperHandler] User recommendations created in ${Date.now() - recommendationStart}ms`);
+
+      // Update user hashtags if paper hashtags provided
+      if (command.hashtags && command.hashtags.length > 0) {
+        const hashtagUpdateStart = Date.now();
+        await Promise.all(
+          command.interestedUserIds.map(async userId => {
+            const user = await this.prisma.user.findUnique({
+              where: { id: userId },
+              select: { hashtags: true },
+            });
+
+            if (user) {
+              const previousUserHashtags = user.hashtags ?? [];
+              const updatedHashtags = Array.from(new Set([...previousUserHashtags, ...command.hashtags]));
+
+              await this.prisma.user.update({
+                where: { id: userId },
+                data: { hashtags: updatedHashtags },
+              });
+            }
+          }),
+        );
+        this.logger.log(`[CreatePaperHandler] User hashtags updated in ${Date.now() - hashtagUpdateStart}ms`);
+      }
     }
 
     return result;

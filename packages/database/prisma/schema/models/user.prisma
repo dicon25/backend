@@ -9,6 +9,8 @@ model User {
   avatarId String? @unique
   avatar   Asset?  @relation("UserAvatar", fields: [avatarId], references: [id])
 
+  hashtags String[] @default([])
+
   status UserStatus @default(ACTIVE)
 
   preferences UserPreference?

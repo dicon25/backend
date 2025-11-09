@@ -7,7 +7,6 @@ import { ChatModule } from '@modules/chat';
 import { NotificationModule } from '@modules/notification';
 import { SubscriptionModule } from '@modules/subscription';
 import { PreferenceModule } from '@modules/preference';
-import { AnalyticsModule } from '@modules/analytics';
 import { Module } from '@nestjs/common';
 
 const features = [
@@ -20,7 +19,6 @@ const features = [
   NotificationModule,
   SubscriptionModule,
   PreferenceModule,
-  AnalyticsModule,
 ];
 
 @Module({

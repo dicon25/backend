@@ -39,12 +39,6 @@ enum NotificationType {
   /// 반대 주장 논문 - 북마크한 논문과 상반된 견해의 새 논문
   OPPOSING_PAPER
 
-  /// 북마크 업데이트 - 북마크한 논문의 새로운 댓글/토론
-  BOOKMARK_UPDATE
-
-  /// 댓글 답변 - 내 댓글에 대한 답변
-  COMMENT_REPLY
-
   /// 토론 활동 - 참여 중인 토론의 새 메시지
   DISCUSSION_ACTIVITY
 

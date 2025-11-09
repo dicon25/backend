@@ -23,6 +23,7 @@ import { PaperRepositoryPort } from './domain/repositories';
 import { PaperRepository } from './infrastructure/persistence';
 import { PaperController, PaperCrawlerController } from './presentation/controllers';
 import { PaperRelationController } from './presentation/controllers/paper-relation.controller';
+import { UserCrawlerController } from './presentation/controllers/user-crawler.controller';
 
 const commandHandlers = [
   CreatePaperHandler,
@@ -58,7 +59,7 @@ const queryHandlers = [
     CrawlerAuthGuard,
   ],
   controllers: [
-    PaperController, PaperCrawlerController, PaperRelationController,
+    PaperController, PaperCrawlerController, PaperRelationController, UserCrawlerController,
   ],
   exports: [PaperFacade],
 })

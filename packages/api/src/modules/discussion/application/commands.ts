@@ -102,6 +102,45 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
       },
     });
 
+    // Get all users who participated in this discussion (excluding the message author)
+    const allMessages = await this.prisma.discussionMessage.findMany({
+      where: { discussionId: command.discussionId },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    const participantUserIds = new Set<string>();
+    participantUserIds.add(discussion.creatorId); // Add discussion creator
+    allMessages.forEach(msg => participantUserIds.add(msg.userId));
+
+    // Remove the message author from notification recipients
+    participantUserIds.delete(command.userId);
+
+    // Get paper title for notification
+    const paper = await this.prisma.paper.findUnique({
+      where: { id: discussion.paperId },
+      select: { title: true },
+    });
+
+    const paperTitle = paper?.title ?? '논문';
+    const notificationTitle = `토론에 새 메시지가 추가되었습니다`;
+    const notificationMessage = `"${discussion.title}" 토론에 새 메시지가 추가되었습니다.`;
+
+    // Create notifications for all participants
+    if (participantUserIds.size > 0) {
+      await this.prisma.notification.createMany({
+        data: Array.from(participantUserIds).map(userId => ({
+          userId,
+          type: 'DISCUSSION_ACTIVITY',
+          title: notificationTitle,
+          message: notificationMessage,
+          relatedPaperId: discussion.paperId,
+          relatedUserId: command.userId,
+          priority: 'NORMAL',
+        })),
+      });
+    }
+
     return message;
   }
 }
