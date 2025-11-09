@@ -50,7 +50,7 @@ export class AuthController {
     maxSize: 5 * 1024 * 1024,
   })))
   @ApiOperation({
-    summary: 'Register a new user',
+    summary:     'Register a new user',
     description: '새로운 사용자 계정을 생성합니다. 이메일, 비밀번호, 이름을 필수로 입력받으며, 관심있는 분야 목록과 프로필 사진은 선택사항입니다. 회원가입 성공 시 자동으로 로그인되어 액세스 토큰과 리프레시 토큰을 반환합니다. 프로필 사진은 최대 5MB까지 업로드 가능하며, JPG, JPEG, PNG, GIF, WEBP 형식을 지원합니다.',
   })
   @ApiConsumes('multipart/form-data')
@@ -79,7 +79,6 @@ export class AuthController {
           'Machine Learning',
           'Computer Vision',
         ],
-        required:    false,
       },
       profilePicture: {
         type:        'string',
@@ -107,6 +106,7 @@ export class AuthController {
       profilePicture,
       dto.interestedCategories,
     );
+
     const result = await this.commandBus.execute<RegisterCommand, RegisterResult>(command);
 
     return LoginResponseDto.from({
@@ -118,7 +118,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @ApiOperation({
-    summary: 'Login with email and password',
+    summary:     'Login with email and password',
     description: '이메일과 비밀번호를 사용하여 사용자를 인증하고 로그인합니다. 인증 성공 시 액세스 토큰과 리프레시 토큰을 반환합니다. 액세스 토큰은 API 요청 시 Authorization 헤더에 포함하여 사용하며, 리프레시 토큰은 액세스 토큰 만료 시 새로운 토큰을 발급받는 데 사용합니다.',
   })
   @ApiResponseType({
@@ -138,7 +138,7 @@ export class AuthController {
 
   @Post('logout')
   @ApiOperation({
-    summary: 'Logout current user',
+    summary:     'Logout current user',
     description: '현재 로그인한 사용자를 로그아웃 처리합니다. 전달받은 리프레시 토큰을 무효화하여 해당 토큰으로는 더 이상 토큰 갱신이 불가능하도록 합니다. 액세스 토큰은 클라이언트에서 삭제해야 하며, 서버에서는 리프레시 토큰만 무효화합니다.',
   })
   @ApiResponseType({
@@ -160,7 +160,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @ApiOperation({
-    summary: 'Refresh access token',
+    summary:     'Refresh access token',
     description: '만료된 액세스 토큰을 리프레시 토큰을 사용하여 갱신합니다. 리프레시 토큰이 유효한 경우 새로운 액세스 토큰과 리프레시 토큰을 발급합니다. 리프레시 토큰이 만료되었거나 무효한 경우 에러를 반환합니다.',
   })
   @ApiResponseType({
