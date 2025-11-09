@@ -7,6 +7,7 @@ export * from './get-popular-papers';
 export * from './get-latest-papers';
 export * from './get-my-reacted-papers';
 export * from './get-my-discussed-papers';
+export * from './get-my-recommended-papers';
 
 
 

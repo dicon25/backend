@@ -12,6 +12,8 @@ export class CreatePaperCommand {
     public readonly pdfUrl?: string,
     public readonly issuedAt?: Date,
     public readonly thumbnailId?: string,
+    public readonly hashtags?: string[],
+    public readonly interestedUserIds?: string[],
   ) {}
 }
 

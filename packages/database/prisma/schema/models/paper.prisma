@@ -11,6 +11,8 @@ model Paper {
 
   content Json
 
+  hashtags String[] @default([])
+
   doi    String  @unique
   url    String?
   pdfUrl String?
@@ -37,6 +39,8 @@ model Paper {
   relatedPapers PaperRelation[] @relation("SourcePaper")
 
   relatingPapers PaperRelation[] @relation("RelatedPaper")
+
+  userRecommendations UserRecommendation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

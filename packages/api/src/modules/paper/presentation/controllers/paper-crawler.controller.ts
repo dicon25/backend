@@ -93,6 +93,16 @@ export class PaperCrawlerController {
       issuedAt: {
         type: 'string', format: 'date-time',
       },
+      hashtags: {
+        type:        'array',
+        items:       { type: 'string' },
+        description: 'Hashtags (not exposed in API responses)',
+      },
+      interestedUserIds: {
+        type:        'array',
+        items:       { type: 'string' },
+        description: 'User IDs who should receive this paper as recommendation',
+      },
     },
     required: [
       'paperId', 'title', 'categories', 'authors', 'summary', 'content', 'doi',
@@ -196,6 +206,8 @@ export class PaperCrawlerController {
       dto.pdfUrl,
       dto.issuedAt ? new Date(dto.issuedAt) : undefined,
       thumbnailId,
+      dto.hashtags,
+      dto.interestedUserIds,
     );
 
     const createStart = Date.now();

@@ -11,6 +11,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { User } from '@scholub/database';
 import { Request } from 'express';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { AssetFacade } from '@/modules/asset/application/facades';
 import { PaperFacade } from '@/modules/paper/application/facades';
 import { PaperEntity } from '@/modules/paper/domain/entities';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
@@ -26,7 +27,8 @@ import { RecordPaperViewResponseDto } from '../dtos/response/record-paper-view-r
 @ApiTags('Papers')
 @Controller('papers')
 export class PaperController {
-  constructor(private readonly paperFacade: PaperFacade) {
+  constructor(private readonly paperFacade: PaperFacade,
+    private readonly assetFacade: AssetFacade) {
   }
 
   @Get('categories')
@@ -49,12 +51,22 @@ export class PaperController {
   })
   @ApiResponseType({ type: PaperListDto })
   async listPapersByCategory(@Param('category') category: string, @Query() query: ListPapersDto) {
-    return await this.paperFacade.listPapersByCategory(category, {
+    const result = await this.paperFacade.listPapersByCategory(category, {
       page:      query.page ?? 1,
       limit:     query.limit ?? 20,
       sortBy:    query.sortBy,
       sortOrder: query.sortOrder,
     });
+
+    const papers = await this.mapPapersToDto(result.papers);
+
+    return {
+      papers,
+      total:      result.total,
+      page:       result.page,
+      limit:      result.limit,
+      totalPages: result.totalPages,
+    };
   }
 
   @Get('headlines')
@@ -70,7 +82,7 @@ export class PaperController {
   async getHeadlinePapers(@Query('limit') limit?: number) {
     const papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
 
-    return papers.map(paper => this.mapToDto(paper));
+    return await this.mapPapersToDto(papers);
   }
 
   @Get('popular')
@@ -86,7 +98,7 @@ export class PaperController {
   async getPopularPapers(@Query('limit') limit?: number, @Query('days') days?: number) {
     const papers = await this.paperFacade.getPopularPapers(limit ?? 20, days ?? 90);
 
-    return papers.map(paper => this.mapToDto(paper));
+    return await this.mapPapersToDto(papers);
   }
 
   @Get('latest')
@@ -102,10 +114,35 @@ export class PaperController {
   async getLatestPapers(@Query('limit') limit?: number) {
     const papers = await this.paperFacade.getLatestPapers(limit ?? 20);
 
-    return papers.map(paper => this.mapToDto(paper));
+    return await this.mapPapersToDto(papers);
   }
 
-  private mapToDto(paper: PaperEntity): PaperDetailDto {
+  private async mapPapersToDto(papers: PaperEntity[]): Promise<PaperDetailDto[]> {
+    // Collect all thumbnail IDs
+    const thumbnailIds = papers
+      .map(p => p.thumbnailId)
+      .filter((id): id is string => id !== undefined);
+
+    // Batch fetch all thumbnail assets
+    const thumbnailMap = new Map<string, string>;
+
+    if (thumbnailIds.length > 0) {
+      await Promise.all(thumbnailIds.map(async id => {
+        try {
+          const asset = await this.assetFacade.getAssetDetail(id);
+
+          thumbnailMap.set(id, asset.url);
+        } catch {
+          // Asset not found, skip
+        }
+      }));
+    }
+
+    // Map papers to DTOs
+    return papers.map(paper => this.mapToDto(paper, thumbnailMap));
+  }
+
+  private mapToDto(paper: PaperEntity, thumbnailMap?: Map<string, string>): PaperDetailDto {
     return {
       id:             paper.id,
       paperId:        paper.paperId,
@@ -121,10 +158,12 @@ export class PaperController {
       likeCount:      paper.likeCount,
       unlikeCount:    paper.unlikeCount,
       totalViewCount: paper.totalViewCount,
-      thumbnailId:    paper.thumbnailId,
-      pdfId:          paper.pdfId,
-      createdAt:      paper.createdAt,
-      updatedAt:      paper.updatedAt,
+      thumbnailUrl:   paper.thumbnailId && thumbnailMap
+        ? thumbnailMap.get(paper.thumbnailId)
+        : undefined,
+      pdfId:     paper.pdfId,
+      createdAt: paper.createdAt,
+      updatedAt: paper.updatedAt,
     };
   }
 
@@ -144,7 +183,7 @@ export class PaperController {
   }) {
     const papers = await this.paperFacade.getMyReactedPapers(req.user.id);
 
-    return papers.map(paper => this.mapToDto(paper));
+    return await this.mapPapersToDto(papers);
   }
 
   @Get('me/discussed')
@@ -163,7 +202,26 @@ export class PaperController {
   }) {
     const papers = await this.paperFacade.getMyDiscussedPapers(req.user.id);
 
-    return papers.map(paper => this.mapToDto(paper));
+    return await this.mapPapersToDto(papers);
+  }
+
+  @Get('me/recommended')
+  @ApiOperation({
+    summary:     'Get my recommended papers',
+    description: '현재 로그인한 사용자에게 추천된 논문 목록을 조회합니다. 최신순으로 정렬되며, limit 파라미터로 반환할 항목 수를 제한할 수 있습니다(기본값: 20개).',
+  })
+  @ApiResponseType({
+    type:    PaperDetailDto,
+    isArray: true,
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async getMyRecommendedPapers(@Req() req: Request & {
+    user: User;
+  }, @Query('limit') limit?: number) {
+    const papers = await this.paperFacade.getMyRecommendedPapers(req.user.id, limit ?? 20);
+
+    return await this.mapPapersToDto(papers);
   }
 
   @Post(':paperId/view')
@@ -195,8 +253,42 @@ export class PaperController {
     user?: User;
   }) {
     const userId = req.user?.id;
+    const paper = await this.paperFacade.getPaperDetail(paperId, userId);
 
-    return await this.paperFacade.getPaperDetail(paperId, userId);
+    // Get thumbnail URL if thumbnailId exists
+    let thumbnailUrl: string | undefined;
+
+    if (paper.thumbnailId) {
+      try {
+        const asset = await this.assetFacade.getAssetDetail(paper.thumbnailId);
+
+        thumbnailUrl = asset.url;
+      } catch {
+        // Asset not found, skip
+      }
+    }
+
+    return {
+      id:             paper.id,
+      paperId:        paper.paperId,
+      title:          paper.title,
+      categories:     paper.categories,
+      authors:        paper.authors,
+      summary:        paper.summary,
+      content:        paper.content,
+      doi:            paper.doi,
+      url:            paper.url,
+      pdfUrl:         paper.pdfUrl,
+      issuedAt:       paper.issuedAt,
+      likeCount:      paper.likeCount,
+      unlikeCount:    paper.unlikeCount,
+      totalViewCount: paper.totalViewCount,
+      thumbnailUrl,
+      pdfId:          paper.pdfId,
+      createdAt:      paper.createdAt,
+      updatedAt:      paper.updatedAt,
+      myReaction:     paper.myReaction,
+    };
   }
 }
 

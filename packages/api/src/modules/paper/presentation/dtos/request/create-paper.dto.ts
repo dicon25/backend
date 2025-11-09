@@ -91,6 +91,38 @@ export class CreatePaperDto {
   @IsOptional()
   @IsString()
   thumbnailId?: string;
+
+  @ApiProperty({ description: 'Hashtags (not exposed in API responses)', type: [String], required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+      }
+    }
+    return Array.isArray(value) ? value : [];
+  })
+  @IsArray()
+  @IsString({ each: true })
+  hashtags?: string[];
+
+  @ApiProperty({ description: 'User IDs who should receive this paper as recommendation', type: [String], required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+      }
+    }
+    return Array.isArray(value) ? value : [];
+  })
+  @IsArray()
+  @IsString({ each: true })
+  interestedUserIds?: string[];
 }
 
 

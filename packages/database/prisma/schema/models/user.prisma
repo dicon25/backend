@@ -17,6 +17,8 @@ model User {
   paperViews    PaperView[]
   notifications Notification[]
 
+  userRecommendations UserRecommendation[]
+
   chatSessions   ChatSession[]
   userActivities UserActivity[]
 

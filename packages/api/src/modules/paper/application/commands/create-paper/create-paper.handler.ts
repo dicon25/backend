@@ -4,12 +4,16 @@ import { CreatePaperCommand } from './create-paper.command';
 import { PaperRepositoryPort } from '../../../domain/repositories';
 import { PaperEntity } from '../../../domain/entities';
 import { ConflictException } from '@nestjs/common';
+import { PrismaService } from '@/common/modules/prisma';
 
 @CommandHandler(CreatePaperCommand)
 export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
   private readonly logger = new Logger(CreatePaperHandler.name);
 
-  constructor(private readonly paperRepository: PaperRepositoryPort) {}
+  constructor(
+    private readonly paperRepository: PaperRepositoryPort,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async execute(command: CreatePaperCommand): Promise<PaperEntity> {
     const checkStart = Date.now();
@@ -36,6 +40,7 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
       authors: command.authors,
       summary: command.summary,
       content: command.content,
+      hashtags: command.hashtags ?? [],
       doi: command.doi,
       pdfId: command.pdfId,
       url: command.url,
@@ -47,6 +52,20 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
       totalViewCount: 0,
     } as Partial<PaperEntity>);
     this.logger.log(`[CreatePaperHandler] Paper creation completed in ${Date.now() - createStart}ms`);
+
+    // Add to user recommendations if interestedUserIds provided
+    if (command.interestedUserIds && command.interestedUserIds.length > 0) {
+      const recommendationStart = Date.now();
+      await this.prisma.userRecommendation.createMany({
+        data: command.interestedUserIds.map(userId => ({
+          userId,
+          paperId: result.id,
+        })),
+        skipDuplicates: true,
+      });
+      this.logger.log(`[CreatePaperHandler] User recommendations created in ${Date.now() - recommendationStart}ms`);
+    }
+
     return result;
   }
 }

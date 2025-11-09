@@ -6,6 +6,7 @@ export class PaperEntity {
   authors: string[];
   summary: string;
   content: any;
+  hashtags: string[];
   doi: string;
   url?: string;
   pdfUrl?: string;

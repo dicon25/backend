@@ -52,7 +52,7 @@ export class PaperDetailDto {
   totalViewCount: number;
 
   @ApiProperty({ required: false })
-  thumbnailId?: string;
+  thumbnailUrl?: string;
 
   @ApiProperty()
   pdfId: string;

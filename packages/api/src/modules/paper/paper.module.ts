@@ -13,6 +13,7 @@ import {
   GetLatestPapersHandler,
   GetMyDiscussedPapersHandler,
   GetMyReactedPapersHandler,
+  GetMyRecommendedPapersHandler,
   GetPaperDetailHandler,
   GetPopularPapersHandler,
   ListPapersByCategoryHandler,
@@ -39,6 +40,7 @@ const queryHandlers = [
   GetLatestPapersHandler,
   GetMyReactedPapersHandler,
   GetMyDiscussedPapersHandler,
+  GetMyRecommendedPapersHandler,
 ];
 
 @Module({

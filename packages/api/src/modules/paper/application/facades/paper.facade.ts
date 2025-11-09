@@ -12,6 +12,7 @@ import {
   GetLatestPapersQuery,
   GetMyReactedPapersQuery,
   GetMyDiscussedPapersQuery,
+  GetMyRecommendedPapersQuery,
 } from '../queries';
 import { PaperEntity } from '../../domain/entities';
 import { CategoryWithCount, PaginatedPapers, PaperListOptions } from '../../domain/repositories';
@@ -72,6 +73,10 @@ export class PaperFacade {
 
   async getMyDiscussedPapers(userId: string): Promise<any[]> {
     return await this.queryBus.execute(new GetMyDiscussedPapersQuery(userId));
+  }
+
+  async getMyRecommendedPapers(userId: string, limit: number = 20): Promise<any[]> {
+    return await this.queryBus.execute(new GetMyRecommendedPapersQuery(userId, limit));
   }
 }
 
