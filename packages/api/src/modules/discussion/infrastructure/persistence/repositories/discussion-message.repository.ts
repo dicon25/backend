@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
 import { DiscussionMessageEntity } from '../../../domain/entities';
-import { DiscussionMessageRepositoryPort, PaginatedMessages } from '../../../domain/repositories';
+import { DiscussionMessageRepositoryPort } from '../../../domain/repositories';
 import { DiscussionMessageMapper } from '../mappers';
 
 @Injectable()
@@ -26,27 +26,13 @@ export class DiscussionMessageRepository implements DiscussionMessageRepositoryP
   }
 
   async findByDiscussion(discussionId: string,
-    page: number,
-    limit: number,
-    userId?: string): Promise<PaginatedMessages> {
-    const skip = (page - 1) * limit;
+    userId?: string): Promise<DiscussionMessageEntity[]> {
+    const messages = await this.prisma.discussionMessage.findMany({
+      where:   { discussionId },
+      orderBy: { createdAt: 'asc' },
+    });
 
-    const [messages, total] = await Promise.all([
-      this.prisma.discussionMessage.findMany({
-        where:   { discussionId },
-        skip,
-        take:    limit,
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.discussionMessage.count({ where: { discussionId } }),
-    ]);
-
-    return {
-      messages: messages.map(msg => DiscussionMessageMapper.toDomain(msg)),
-      total,
-      page,
-      limit,
-    };
+    return messages.map(msg => DiscussionMessageMapper.toDomain(msg));
   }
 
   async update(id: string, content: string): Promise<DiscussionMessageEntity> {

@@ -1,11 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { DiscussionEntity } from '../domain/entities';
+import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
 import {
   DiscussionMessageRepositoryPort,
   DiscussionRepositoryPort,
-  PaginatedDiscussions,
-  PaginatedMessages,
 } from '../domain/repositories';
 
 // Queries
@@ -15,16 +13,12 @@ export class GetDiscussionDetailQuery {
 }
 
 export class ListDiscussionsByPaperQuery {
-  constructor(public readonly paperId: string,
-    public readonly page: number,
-    public readonly limit: number) {
+  constructor(public readonly paperId: string) {
   }
 }
 
 export class ListDiscussionMessagesQuery {
   constructor(public readonly discussionId: string,
-    public readonly page: number,
-    public readonly limit: number,
     public readonly userId?: string) {
   }
 }
@@ -52,10 +46,8 @@ implements IQueryHandler<ListDiscussionsByPaperQuery> {
   constructor(private readonly discussionRepository: DiscussionRepositoryPort) {
   }
 
-  async execute(query: ListDiscussionsByPaperQuery): Promise<PaginatedDiscussions> {
-    return await this.discussionRepository.findByPaper(query.paperId,
-      query.page,
-      query.limit);
+  async execute(query: ListDiscussionsByPaperQuery): Promise<DiscussionEntity[]> {
+    return await this.discussionRepository.findByPaper(query.paperId);
   }
 }
 
@@ -66,17 +58,14 @@ implements IQueryHandler<ListDiscussionMessagesQuery> {
     private readonly messageRepository: DiscussionMessageRepositoryPort) {
   }
 
-  async execute(query: ListDiscussionMessagesQuery): Promise<PaginatedMessages> {
+  async execute(query: ListDiscussionMessagesQuery): Promise<DiscussionMessageEntity[]> {
     const discussion = await this.discussionRepository.findById(query.discussionId);
 
     if (!discussion) {
       throw new NotFoundException('Discussion not found');
     }
 
-    return await this.messageRepository.findByDiscussion(query.discussionId,
-      query.page,
-      query.limit,
-      query.userId);
+    return await this.messageRepository.findByDiscussion(query.discussionId, query.userId);
   }
 }
 

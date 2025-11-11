@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
 import { DiscussionEntity } from '../../../domain/entities';
-import { DiscussionRepositoryPort, PaginatedDiscussions } from '../../../domain/repositories';
+import { DiscussionRepositoryPort } from '../../../domain/repositories';
 import { DiscussionMapper } from '../mappers';
 
 @Injectable()
@@ -26,27 +26,13 @@ export class DiscussionRepository implements DiscussionRepositoryPort {
     return discussion ? DiscussionMapper.toDomain(discussion) : null;
   }
 
-  async findByPaper(paperId: string,
-    page: number,
-    limit: number): Promise<PaginatedDiscussions> {
-    const skip = (page - 1) * limit;
+  async findByPaper(paperId: string): Promise<DiscussionEntity[]> {
+    const discussions = await this.prisma.discussion.findMany({
+      where:   { paperId },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    const [discussions, total] = await Promise.all([
-      this.prisma.discussion.findMany({
-        where:   { paperId },
-        skip,
-        take:    limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.discussion.count({ where: { paperId } }),
-    ]);
-
-    return {
-      discussions: discussions.map(DiscussionMapper.toDomain),
-      total,
-      page,
-      limit,
-    };
+    return discussions.map(DiscussionMapper.toDomain);
   }
 
   async updateCounts(discussionId: string): Promise<void> {

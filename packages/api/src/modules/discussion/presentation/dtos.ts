@@ -1,11 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
-  IsNumber,
-  IsOptional,
   IsString,
-  Min,
 } from 'class-validator';
 
 // Request DTOs
@@ -33,26 +29,6 @@ export class UpdateMessageDto {
   @IsString()
   @IsNotEmpty()
   content: string;
-}
-
-export class ListDto {
-  @ApiProperty({
-    description: 'Page number', default: 1, required: false,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiProperty({
-    description: 'Items per page', default: 20, required: false,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  limit?: number = 20;
 }
 
 // Response DTOs
@@ -106,33 +82,5 @@ export class DiscussionMessageDto {
 
   @ApiProperty()
   updatedAt: Date;
-}
-
-export class PaginatedDiscussionsDto {
-  @ApiProperty({ type: [DiscussionDto] })
-  discussions: DiscussionDto[];
-
-  @ApiProperty()
-  total: number;
-
-  @ApiProperty()
-  page: number;
-
-  @ApiProperty()
-  limit: number;
-}
-
-export class PaginatedMessagesDto {
-  @ApiProperty({ type: [DiscussionMessageDto] })
-  messages: DiscussionMessageDto[];
-
-  @ApiProperty()
-  total: number;
-
-  @ApiProperty()
-  page: number;
-
-  @ApiProperty()
-  limit: number;
 }
 

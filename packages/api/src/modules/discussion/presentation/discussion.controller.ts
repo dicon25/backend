@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -19,9 +18,7 @@ import {
   CreateDiscussionDto,
   CreateMessageDto,
   DiscussionDto,
-  ListDto,
-  PaginatedDiscussionsDto,
-  PaginatedMessagesDto,
+  DiscussionMessageDto,
   UpdateMessageDto,
 } from './dtos';
 
@@ -53,13 +50,11 @@ export class DiscussionController {
   @Get('papers/:paperId/discussions')
   @ApiOperation({
     summary:     'Get discussions for a paper',
-    description: '특정 논문에 대한 토론 목록을 페이지네이션을 사용하여 조회합니다. 페이지 번호와 페이지당 항목 수를 쿼리 파라미터로 지정할 수 있으며, 기본값은 페이지 1, 페이지당 20개 항목입니다. 인증이 필요하지 않습니다.',
+    description: '특정 논문에 대한 토론 목록을 조회합니다. 인증이 필요하지 않습니다.',
   })
-  @ApiResponseType({ type: PaginatedDiscussionsDto })
-  async listDiscussions(@Param('paperId') paperId: string, @Query() query: ListDto) {
-    return await this.discussionFacade.listDiscussionsByPaper(paperId,
-      query.page ?? 1,
-      query.limit ?? 20);
+  @ApiResponseType({ type: [DiscussionDto] })
+  async listDiscussions(@Param('paperId') paperId: string) {
+    return await this.discussionFacade.listDiscussionsByPaper(paperId);
   }
 
   @Get('discussions/:discussionId')
@@ -90,22 +85,18 @@ export class DiscussionController {
   @Get('discussions/:discussionId/messages')
   @ApiOperation({
     summary:     'Get messages in a discussion',
-    description: '특정 토론의 메시지 목록을 페이지네이션을 사용하여 조회합니다. 페이지 번호와 페이지당 항목 수를 쿼리 파라미터로 지정할 수 있으며, 기본값은 페이지 1, 페이지당 20개 항목입니다.',
+    description: '특정 토론의 메시지 목록을 조회합니다.',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiResponseType({ type: PaginatedMessagesDto })
+  @ApiResponseType({ type: [DiscussionMessageDto] })
   async listMessages(@Param('discussionId') discussionId: string,
-    @Query() query: ListDto,
     @Req() req: Request & {
       user?: any;
     }) {
     const userId = req.user?.id;
 
-    return await this.discussionFacade.listMessages(discussionId,
-      query.page ?? 1,
-      query.limit ?? 20,
-      userId);
+    return await this.discussionFacade.listMessages(discussionId, userId);
   }
 
   @Patch('discussions/:discussionId/messages/:messageId')

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
-import { PaginatedDiscussions, PaginatedMessages } from '../domain/repositories';
 import {
   CreateDiscussionCommand,
   CreateMessageCommand,
@@ -27,10 +26,8 @@ export class DiscussionFacade {
     return await this.queryBus.execute(new GetDiscussionDetailQuery(discussionId));
   }
 
-  async listDiscussionsByPaper(paperId: string,
-    page: number,
-    limit: number): Promise<PaginatedDiscussions> {
-    return await this.queryBus.execute(new ListDiscussionsByPaperQuery(paperId, page, limit));
+  async listDiscussionsByPaper(paperId: string): Promise<DiscussionEntity[]> {
+    return await this.queryBus.execute(new ListDiscussionsByPaperQuery(paperId));
   }
 
   async createMessage(discussionId: string,
@@ -40,10 +37,8 @@ export class DiscussionFacade {
   }
 
   async listMessages(discussionId: string,
-    page: number,
-    limit: number,
-    userId?: string): Promise<PaginatedMessages> {
-    return await this.queryBus.execute(new ListDiscussionMessagesQuery(discussionId, page, limit, userId));
+    userId?: string): Promise<DiscussionMessageEntity[]> {
+    return await this.queryBus.execute(new ListDiscussionMessagesQuery(discussionId, userId));
   }
 
   async updateMessage(messageId: string,
