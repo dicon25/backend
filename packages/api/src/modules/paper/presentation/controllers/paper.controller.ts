@@ -117,14 +117,13 @@ export class PaperController {
     type:    PaperListItemDto,
     isArray: true,
   })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async getHeadlinePapers(@Req() req: Request & {
-    user: User;
+    user?: User;
   }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
 
-    return await this.mapPapersToListItemDto(papers, req.user.id);
+    return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
   @Get('popular')
@@ -136,14 +135,13 @@ export class PaperController {
     type:    PaperListItemDto,
     isArray: true,
   })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async getPopularPapers(@Req() req: Request & {
-    user: User;
+    user?: User;
   }, @Query('limit') limit?: number, @Query('days') days?: number) {
     const papers = await this.paperFacade.getPopularPapers(limit ?? 20, days ?? 90);
 
-    return await this.mapPapersToListItemDto(papers, req.user.id);
+    return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
   @Get('latest')
@@ -155,14 +153,13 @@ export class PaperController {
     type:    PaperListItemDto,
     isArray: true,
   })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async getLatestPapers(@Req() req: Request & {
-    user: User;
+    user?: User;
   }, @Query('limit') limit?: number) {
     const papers = await this.paperFacade.getLatestPapers(limit ?? 20);
 
-    return await this.mapPapersToListItemDto(papers, req.user.id);
+    return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
   private async mapPapersToDto(papers: PaperEntity[]): Promise<PaperDetailDto[]> {
@@ -293,17 +290,21 @@ export class PaperController {
           isLiked:   false,
           isUnliked: false,
         }
-        : undefined;
+        : {
+          isLiked:   false,
+          isUnliked: false,
+        };
 
       return {
-        id:              paper.id,
-        paperId:         paper.paperId,
-        categories:      paper.categories,
-        title:           paper.title,
-        summary:         paper.summary,
-        likeCount:       paper.likeCount,
-        unlikeCount:     paper.unlikeCount,
-        discussionCount: discussionCountMap.get(paper.id) ?? 0,
+        id:                paper.id,
+        paperId:           paper.paperId,
+        categories:        paper.categories,
+        title:             paper.title,
+        summary:           paper.summary,
+        translatedSummary: paper.translatedSummary,
+        likeCount:         paper.likeCount,
+        unlikeCount:       paper.unlikeCount,
+        discussionCount:   discussionCountMap.get(paper.id) ?? 0,
         thumbnailUrl,
         myReaction,
       };
@@ -390,8 +391,7 @@ export class PaperController {
     description: '논문 ID를 사용하여 특정 논문의 상세 정보를 조회합니다. 논문의 제목, 저자, 카테고리, 요약, 내용, DOI, 발행일, PDF URL 등의 정보를 포함합니다. 로그인한 사용자의 경우 해당 논문에 대한 반응(좋아요) 상태도 함께 반환됩니다.',
   })
   @ApiResponseType({ type: PaperDetailDto })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async getPaperDetail(@Param('paperId') paperId: string, @Req() req: Request & {
     user?: User;
   }) {
@@ -410,6 +410,12 @@ export class PaperController {
         // Asset not found, skip
       }
     }
+
+    // Set myReaction for anonymous users
+    const myReaction = paper.myReaction ?? {
+      isLiked:   false,
+      isUnliked: false,
+    };
 
     return {
       id:                paper.id,
@@ -431,7 +437,7 @@ export class PaperController {
       pdfId:             paper.pdfId,
       createdAt:         paper.createdAt,
       updatedAt:         paper.updatedAt,
-      myReaction:        paper.myReaction,
+      myReaction,
     };
   }
 }

@@ -28,6 +28,7 @@ import {
   PaperSyncService,
 } from './infrastructure/search/elasticsearch';
 import { PaperController, PaperCrawlerController } from './presentation/controllers';
+import { PaperAdminController } from './presentation/controllers/paper-admin.controller';
 import { PaperRelationController } from './presentation/controllers/paper-relation.controller';
 import { UserCrawlerController } from './presentation/controllers/user-crawler.controller';
 
@@ -86,7 +87,7 @@ const queryHandlers = [
     CrawlerAuthGuard,
   ],
   controllers: [
-    PaperController, PaperCrawlerController, PaperRelationController, UserCrawlerController,
+    PaperController, PaperCrawlerController, PaperAdminController, PaperRelationController, UserCrawlerController,
   ],
   exports: [PaperFacade],
 })

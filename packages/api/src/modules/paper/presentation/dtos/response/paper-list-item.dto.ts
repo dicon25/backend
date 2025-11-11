@@ -17,6 +17,9 @@ export class PaperListItemDto {
   @ApiProperty()
   summary: string;
 
+  @ApiProperty({ required: false })
+  translatedSummary?: string;
+
   @ApiProperty()
   likeCount: number;
 

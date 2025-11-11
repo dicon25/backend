@@ -43,27 +43,81 @@ export class PaperSearchRepository {
       await this.paperIndexService.ensureIndexExists();
 
       const boolQuery: QueryDslBoolQuery = {
-        must:   [] as QueryDslQueryContainer[],
-        filter: [] as QueryDslQueryContainer[],
+        must:                 [] as QueryDslQueryContainer[],
+        should:               [] as QueryDslQueryContainer[],
+        filter:               [] as QueryDslQueryContainer[],
+        minimum_should_match: 0,
       };
 
       const query: QueryDslQueryContainer = { bool: boolQuery };
 
       if (filters?.searchQuery) {
-        (boolQuery.must as QueryDslQueryContainer[]).push({ multi_match: {
-          query:  filters.searchQuery,
-          fields: [
-            'title^3',
-            'summary^2',
+        const searchQuery = filters.searchQuery.trim();
+        const hasKorean = (/[ㄱ-ㅎㅏ-ㅣ가-힣]/).test(searchQuery);
+        const hasEnglish = (/[a-zA-Z]/).test(searchQuery);
+        const searchFields: string[] = [];
+
+        if (hasKorean && !hasEnglish) {
+          // Korean-only query
+          searchFields.push('title.korean^4',
+            'summary.korean^3',
+            'translatedSummary^3',
+            'categories.text^2');
+        } else if (hasEnglish && !hasKorean) {
+          // English-only query
+          searchFields.push(
+            'title.english^4',
+            'summary.english^3',
+            'translatedSummary.standard^2',
+            'categories.text^2',
             'authors^1.5',
-            'categories^1',
-          ],
-          type:           'best_fields',
-          fuzziness:      'AUTO',
-          operator:       'or',
-          prefix_length:  2,
-          max_expansions: 50,
+          );
+        } else {
+          searchFields.push(
+            'title^3',
+            'title.korean^2',
+            'title.english^2',
+            'summary^2',
+            'summary.korean^1.5',
+            'summary.english^1.5',
+            'translatedSummary^2',
+            'translatedSummary.standard^1.5',
+            'categories.text^2',
+            'authors^1.5',
+          );
+        }
+
+        // Multi-match query
+        (boolQuery.must as QueryDslQueryContainer[]).push({ multi_match: {
+          query:                searchQuery,
+          fields:               searchFields,
+          type:                 'best_fields',
+          minimum_should_match: '1',
         } });
+
+        // Boost exact matches
+        (boolQuery.should as QueryDslQueryContainer[]).push({ multi_match: {
+          query:  searchQuery,
+          fields: [
+            'title.keyword^10',
+            'categories^5',
+            'authors.keyword^3',
+          ],
+          type:  'phrase',
+          boost: 3.0,
+        } });
+
+        // Add fuzzy matching for typo tolerance
+        if (searchQuery.length > 3) {
+          (boolQuery.should as QueryDslQueryContainer[]).push({ multi_match: {
+            query:         searchQuery,
+            fields:        searchFields,
+            type:          'best_fields',
+            fuzziness:     'AUTO',
+            prefix_length: 2,
+            boost:         0.5,
+          } });
+        }
       } else {
         (boolQuery.must as QueryDslQueryContainer[]).push({ match_all: {} });
       }
@@ -111,18 +165,20 @@ export class PaperSearchRepository {
           break;
       }
 
-      sort.push({ [sortField]: { order: sortOrder === SortOrder.ASC ? 'asc' : 'desc' } });
+      sort.push({ [sortField]: { order: sortOrder.toLowerCase() as 'asc' | 'desc' } });
 
+      // Add score as secondary sort for relevance
       if (filters?.searchQuery) {
-        sort.push({ _score: { order: 'desc' } });
+        sort.unshift({ _score: { order: 'desc' } });
       }
 
       const response = await client.search({
-        index: indexName,
+        index:            indexName,
+        from,
+        size:             limit,
         query,
         sort,
-        from,
-        size:  limit,
+        track_total_hits: true,
       });
 
       const total = typeof response.hits.total === 'number'
@@ -130,38 +186,39 @@ export class PaperSearchRepository {
         : response.hits.total?.value ?? 0;
 
       const hits = response.hits.hits;
+      const paperIds = hits.map(hit => hit._id).filter((id): id is string => id !== undefined);
 
-      const paperIds = hits.map(hit => {
-        const source = hit._source as {
-          id: string;
+      if (paperIds.length === 0) {
+        return {
+          papers:     [],
+          total:      0,
+          page,
+          limit,
+          totalPages: 0,
         };
+      }
 
-        return source.id;
-      });
+      // Fetch full paper data from database
+      const papers = await this.prisma.paper.findMany({ where: { id: { in: paperIds } } });
+      const paperMap = new Map(papers.map(paper => [paper.id, paper]));
 
-      const papers = await this.prisma.paper.findMany({
-        where:   { id: { in: paperIds } },
-        orderBy: paperIds.length > 0 ? { id: 'asc' } : { [sortField]: sortOrder },
-      });
-
-      const paperMap = new Map(papers.map(p => [p.id, p]));
-
+      // Maintain the order from Elasticsearch results
       const orderedPapers = paperIds
         .map(id => paperMap.get(id))
-        .filter(Boolean) as typeof papers;
+        .filter((paper): paper is NonNullable<typeof paper> => paper !== undefined)
+        .map(paper => PaperMapper.toDomain(paper));
 
       return {
-        papers:     orderedPapers.map(PaperMapper.toDomain),
+        papers:     orderedPapers,
         total,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      this.logger.error('Elasticsearch search failed', error);
+      this.logger.error('Failed to search papers in Elasticsearch', error);
 
       throw error;
     }
   }
 }
-
