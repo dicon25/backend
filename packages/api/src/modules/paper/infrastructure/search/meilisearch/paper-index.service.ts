@@ -57,107 +57,11 @@ export class PaperIndexService {
     const indexName = this.meiliSearchService.getIndexName();
 
     try {
-      // Create index
       await client.createIndex(indexName, { primaryKey: 'id' });
 
       const index = client.index(indexName);
 
-      // Configure searchable attributes (검색 가능한 필드) - 우선순위 설정
-      await index.updateSearchableAttributes([
-        'title',              // 제목이 가장 중요
-        'translatedSummary',  // 한국어 번역본
-        'summary',            // 원문 요약
-        'authors',            // 저자
-        'categories',         // 카테고리
-      ]);
-
-      // Configure displayed attributes (반환할 필드)
-      await index.updateDisplayedAttributes([
-        'id',
-        'paperId',
-        'title',
-        'summary',
-        'translatedSummary',
-        'authors',
-        'categories',
-        'doi',
-        'issuedAt',
-        'createdAt',
-        'likeCount',
-        'totalViewCount',
-      ]);
-
-      // Configure filterable attributes (필터링 가능한 필드)
-      await index.updateFilterableAttributes([
-        'categories',
-        'authors',
-        'issuedAt',
-        'createdAt',
-        'likeCount',
-        'totalViewCount',
-      ]);
-
-      // Configure sortable attributes (정렬 가능한 필드)
-      await index.updateSortableAttributes([
-        'issuedAt',
-        'createdAt',
-        'likeCount',
-        'totalViewCount',
-      ]);
-
-      // Configure ranking rules (한국어 검색 최적화)
-      await index.updateRankingRules([
-        'words',
-        'typo',
-        'proximity',
-        'attribute',
-        'sort',
-        'exactness',
-      ]);
-
-      // Configure typo tolerance (한국어 타이포 톨러런스)
-      await index.updateTypoTolerance({
-        enabled:             true,
-        minWordSizeForTypos: {
-          oneTypo:  3,  // 한국어는 짧은 단어도 검색되도록
-          twoTypos: 6,
-        },
-        disableOnWords:      [],  // 모든 단어에 타이포 톨러런스 적용
-        disableOnAttributes: [],  // 모든 속성에 적용
-      });
-
-      // Configure stop words (한국어 불용어)
-      await index.updateStopWords([
-        '은',
-        '는',
-        '이',
-        '가',
-        '을',
-        '를',
-        '의',
-        '에',
-        '와',
-        '과',
-        '도',
-        '로',
-        '으로',
-        '에서',
-        '에게',
-        '께',
-        'the',
-        'a',
-        'an',
-        'and',
-        'or',
-        'but',
-        'in',
-        'on',
-        'at',
-        'to',
-        'for',
-        'of',
-        'with',
-      ]);
+      await this.updateIndexSettings(index);
 
       this.logger.log(`Created MeiliSearch index: ${indexName}`);
     } catch (error) {
@@ -169,12 +73,22 @@ export class PaperIndexService {
 
   private async updateIndexSettings(index: Index): Promise<void> {
     try {
+      /*
+       * 학술 논문 검색에 최적화된 searchable attributes 우선순위
+       * 1. title - 제목이 가장 중요 (논문의 핵심)
+       * 2. translatedSummary - 한국어 번역본 (한국어 검색 시 가장 중요)
+       * 3. summary - 원문 요약 (영어 검색 시 중요)
+       * 4. hashtags - 태그 기반 검색
+       * 5. categories - 카테고리 (분야별 검색)
+       * 6. authors - 저자명 (저자 검색)
+       */
       await index.updateSearchableAttributes([
         'title',
         'translatedSummary',
         'summary',
-        'authors',
+        'hashtags',
         'categories',
+        'authors',
       ]);
 
       await index.updateDisplayedAttributes([
@@ -185,6 +99,7 @@ export class PaperIndexService {
         'translatedSummary',
         'authors',
         'categories',
+        'hashtags',
         'doi',
         'issuedAt',
         'createdAt',
@@ -195,47 +110,77 @@ export class PaperIndexService {
       await index.updateTypoTolerance({
         enabled:             true,
         minWordSizeForTypos: {
-          oneTypo:  3,
-          twoTypos: 6,
+          oneTypo:  4,
+          twoTypos: 8,
         },
-        disableOnWords:      [],  // 모든 단어에 타이포 톨러런스 적용
-        disableOnAttributes: [],  // 모든 속성에 적용
+        disableOnWords:      [],
+        disableOnAttributes: [
+          'authors',
+          'categories',
+        ],
       });
 
-      // Configure stop words (한국어 불용어)
+      // Ranking Rules - 관련성 기반 순위 결정
+      await index.updateRankingRules([
+        'words',       // 쿼리의 모든 단어가 포함된 문서 우선
+        'typo',        // 오타가 적은 문서 우선
+        'proximity',   // 쿼리 단어들이 가까이 있는 문서 우선
+        'attribute',   // searchableAttributes 순서대로 우선순위
+        'sort',        // 정렬 기준 (최신순, 인기순 등)
+        'exactness',   // 정확히 일치하는 문서 우선
+      ]);
+
+      // Filterable/Sortable attributes
+      await index.updateFilterableAttributes([
+        'categories',
+        'authors',
+        'hashtags',
+        'issuedAt',
+        'createdAt',
+        'likeCount',
+        'totalViewCount',
+      ]);
+
+      await index.updateSortableAttributes([
+        'issuedAt',
+        'createdAt',
+        'likeCount',
+        'totalViewCount',
+      ]);
+
+      /*
+       * Separator Tokens - 기본 구분자 사용 (공백, 콤마, 마침표 등)
+       * 빈 배열로 설정하면 기본 구분자만 사용
+       */
+      await index.updateSeparatorTokens([]);
+
+      /*
+       * Non Separator Tokens - 학술 용어의 특수 문자 처리
+       * 하이픈, 밑줄, 슬래시를 단어의 일부로 처리
+       * 예: "machine-learning", "deep_learning", "AI/ML" 등이 하나의 토큰으로 처리됨
+       */
+      await index.updateNonSeparatorTokens([
+        '-',
+        '_',
+        '/',
+      ]);
+
+      /*
+       * Stop Words - 최소한의 불용어만 설정
+       * 한국어와 영어의 가장 일반적인 조사/관사만 포함
+       * 학술 논문의 검색 품질을 위해 불용어를 최소화
+       */
       await index.updateStopWords([
         '은',
         '는',
         '이',
         '가',
-        '을',
-        '를',
-        '의',
-        '에',
-        '와',
-        '과',
-        '도',
-        '로',
-        '으로',
-        '에서',
-        '에게',
-        '께',
         'the',
         'a',
         'an',
-        'and',
-        'or',
-        'but',
-        'in',
-        'on',
-        'at',
-        'to',
-        'for',
-        'of',
-        'with',
       ]);
 
-      this.logger.debug('Updated MeiliSearch index settings for Korean search optimization');
+      this.logger.log('Updated MeiliSearch index settings for academic paper search optimization');
     } catch (error) {
       this.logger.warn('Failed to update index settings', error);
 
