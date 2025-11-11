@@ -120,17 +120,15 @@ export class PaperIndexService {
         ],
       });
 
-      // Ranking Rules - 관련성 기반 순위 결정
       await index.updateRankingRules([
-        'words',       // 쿼리의 모든 단어가 포함된 문서 우선
-        'typo',        // 오타가 적은 문서 우선
-        'proximity',   // 쿼리 단어들이 가까이 있는 문서 우선
-        'attribute',   // searchableAttributes 순서대로 우선순위
-        'sort',        // 정렬 기준 (최신순, 인기순 등)
-        'exactness',   // 정확히 일치하는 문서 우선
+        'words',
+        'typo',
+        'proximity',
+        'attribute',
+        'sort',
+        'exactness',
       ]);
 
-      // Filterable/Sortable attributes
       await index.updateFilterableAttributes([
         'categories',
         'authors',
@@ -148,28 +146,14 @@ export class PaperIndexService {
         'totalViewCount',
       ]);
 
-      /*
-       * Separator Tokens - 기본 구분자 사용 (공백, 콤마, 마침표 등)
-       * 빈 배열로 설정하면 기본 구분자만 사용
-       */
       await index.updateSeparatorTokens([]);
 
-      /*
-       * Non Separator Tokens - 학술 용어의 특수 문자 처리
-       * 하이픈, 밑줄, 슬래시를 단어의 일부로 처리
-       * 예: "machine-learning", "deep_learning", "AI/ML" 등이 하나의 토큰으로 처리됨
-       */
       await index.updateNonSeparatorTokens([
         '-',
         '_',
         '/',
       ]);
 
-      /*
-       * Stop Words - 최소한의 불용어만 설정
-       * 한국어와 영어의 가장 일반적인 조사/관사만 포함
-       * 학술 논문의 검색 품질을 위해 불용어를 최소화
-       */
       await index.updateStopWords([
         '은',
         '는',
@@ -183,8 +167,6 @@ export class PaperIndexService {
       this.logger.log('Updated MeiliSearch index settings for academic paper search optimization');
     } catch (error) {
       this.logger.warn('Failed to update index settings', error);
-
-      // Don't throw - allow the operation to continue
     }
   }
 

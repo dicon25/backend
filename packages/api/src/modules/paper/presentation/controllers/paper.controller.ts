@@ -316,7 +316,7 @@ export class PaperController {
     description: '현재 로그인한 사용자가 반응(좋아요/싫어요)을 누른 논문 목록을 조회합니다. 최근 반응한 순서로 정렬됩니다.',
   })
   @ApiResponseType({
-    type:    PaperDetailDto,
+    type:    PaperListItemDto,
     isArray: true,
   })
   @ApiBearerAuth()
@@ -326,7 +326,7 @@ export class PaperController {
   }) {
     const papers = await this.paperFacade.getMyReactedPapers(req.user.id);
 
-    return await this.mapPapersToDto(papers);
+    return await this.mapPapersToListItemDto(papers, req.user.id);
   }
 
   @Get('me/discussed')
@@ -335,7 +335,7 @@ export class PaperController {
     description: '현재 로그인한 사용자가 토론에 참여한 논문 목록을 조회합니다. 최근 토론 참여 순서로 정렬됩니다.',
   })
   @ApiResponseType({
-    type:    PaperDetailDto,
+    type:    PaperListItemDto,
     isArray: true,
   })
   @ApiBearerAuth()
@@ -345,7 +345,7 @@ export class PaperController {
   }) {
     const papers = await this.paperFacade.getMyDiscussedPapers(req.user.id);
 
-    return await this.mapPapersToDto(papers);
+    return await this.mapPapersToListItemDto(papers, req.user.id);
   }
 
   @Get('me/recommended')
