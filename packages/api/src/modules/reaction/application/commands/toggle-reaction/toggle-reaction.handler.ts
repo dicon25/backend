@@ -1,4 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/common/modules/prisma';
 import { ReactionType } from '../../../domain/entities';
 import { ReactionRepositoryPort } from '../../../domain/repositories';
@@ -13,10 +14,21 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
   async execute(command: ToggleReactionCommand): Promise<{
     action: 'created' | 'deleted';
   }> {
+    // Find paper by paperId field (not PK)
+    const paper = await this.prisma.paper.findUnique({
+      where: { paperId: command.paperId },
+    });
+
+    if (!paper) {
+      throw new NotFoundException(`Paper not found with paperId: ${command.paperId}`);
+    }
+
+    const paperPkId = paper.id;
+
     return await this.prisma.$transaction(async tx => {
       // Check if the same reaction exists
       const existingReaction = await this.reactionRepository.findByUserAndPaper(command.userId,
-        command.paperId,
+        paperPkId,
         command.type);
 
       if (existingReaction) {
@@ -27,7 +39,7 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
         const field = command.type === ReactionType.LIKE ? 'likeCount' : 'unlikeCount';
 
         await tx.paper.update({
-          where: { id: command.paperId },
+          where: { id: paperPkId },
           data:  { [field]: { decrement: 1 } },
         });
 
@@ -38,7 +50,7 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
       const oppositeType = command.type === ReactionType.LIKE ? ReactionType.UNLIKE : ReactionType.LIKE;
 
       const oppositeReaction = await this.reactionRepository.findByUserAndPaper(command.userId,
-        command.paperId,
+        paperPkId,
         oppositeType);
 
       if (oppositeReaction) {
@@ -49,19 +61,19 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
         const oppositeField = oppositeType === ReactionType.LIKE ? 'likeCount' : 'unlikeCount';
 
         await tx.paper.update({
-          where: { id: command.paperId },
+          where: { id: paperPkId },
           data:  { [oppositeField]: { decrement: 1 } },
         });
       }
 
       // Create new reaction
-      await this.reactionRepository.create(command.userId, command.paperId, command.type);
+      await this.reactionRepository.create(command.userId, paperPkId, command.type);
 
       // Increment count
       const field = command.type === ReactionType.LIKE ? 'likeCount' : 'unlikeCount';
 
       await tx.paper.update({
-        where: { id: command.paperId },
+        where: { id: paperPkId },
         data:  { [field]: { increment: 1 } },
       });
 
@@ -70,7 +82,7 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
 
       await tx.userActivity.create({ data: {
         userId:  command.userId,
-        paperId: command.paperId,
+        paperId: paperPkId,
         type:    activityType,
       } });
 
