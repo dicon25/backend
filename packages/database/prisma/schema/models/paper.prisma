@@ -7,8 +7,7 @@ model Paper {
   categories String[]
   authors    String[]
 
-  summary String
-
+  summary           String
   translatedSummary String?
 
   content Json

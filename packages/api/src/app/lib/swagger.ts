@@ -2,7 +2,6 @@ import { INestApplication, Logger } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { OperationObject, PathItemObject, SecurityRequirementObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import packageJson from '@/../package.json';
-import { isProduction } from '@/common/utils';
 
 const HTTP_METHODS: ReadonlyArray<
   'get' | 'put' | 'post' | 'delete' | 'options' | 'head' | 'patch' | 'trace'
@@ -32,8 +31,6 @@ function stripPublicMarker(op: OperationObject): void {
 
 export function applySwagger(app: INestApplication): void {
   const logger = new Logger('Swagger');
-
-  if (isProduction()) return;
 
   const config = (new DocumentBuilder)
     .setTitle('API')

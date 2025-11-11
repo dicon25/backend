@@ -67,16 +67,18 @@ export class UserCrawlerController {
     }
 
     // Combine user hashtags with paper hashtags
-    return users.map(user => {
-      const userHashtags = user.hashtags ?? [];
-      const paperHashtags = Array.from(userPaperHashtagsMap.get(user.id) ?? []);
-      const interestedHashtags = Array.from(new Set([...userHashtags, ...paperHashtags]));
+    return users
+      .map(user => {
+        const userHashtags = user.hashtags ?? [];
+        const paperHashtags = Array.from(userPaperHashtagsMap.get(user.id) ?? []);
+        const interestedHashtags = Array.from(new Set([...userHashtags, ...paperHashtags]));
 
-      return {
-        userId: user.id,
-        interestedHashtags,
-      };
-    });
+        return {
+          userId: user.id,
+          interestedHashtags,
+        };
+      })
+      .filter(item => item.interestedHashtags.length > 0);
   }
 }
 
