@@ -15,11 +15,9 @@ import { PaperMapper } from '../mappers';
 export class PaperRepository implements PaperRepositoryPort {
   private readonly logger = new Logger(PaperRepository.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
+  constructor(private readonly prisma: PrismaService,
     private readonly paperSearchRepository: PaperSearchRepository,
-    private readonly paperSyncService: PaperSyncService,
-  ) {
+    private readonly paperSyncService: PaperSyncService) {
   }
 
   async create(paper: Partial<PaperEntity>): Promise<PaperEntity> {

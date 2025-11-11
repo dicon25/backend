@@ -1,12 +1,3 @@
-import { CrawlerAuthGuard } from '@/common/guards';
-import { ApiResponseType } from '@/common/lib/swagger/decorators';
-import { PrismaService } from '@/common/modules/prisma';
-import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
-import { AssetFacade } from '@/modules/asset/application/facades';
-import { CreatePaperCommand } from '@/modules/paper/application/commands';
-import { PaperFacade } from '@/modules/paper/application/facades';
-import { PaperIndexService, PaperSyncService } from '@/modules/paper/infrastructure/search/meilisearch';
-import { Public } from '@/modules/user/presentation/decorators';
 import {
   BadRequestException,
   Body,
@@ -27,6 +18,15 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { CrawlerAuthGuard } from '@/common/guards';
+import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { PrismaService } from '@/common/modules/prisma';
+import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
+import { AssetFacade } from '@/modules/asset/application/facades';
+import { CreatePaperCommand } from '@/modules/paper/application/commands';
+import { PaperFacade } from '@/modules/paper/application/facades';
+import { PaperIndexService, PaperSyncService } from '@/modules/paper/infrastructure/search/meilisearch';
+import { Public } from '@/modules/user/presentation/decorators';
 import { CreatePaperDto, PaperDetailDto } from '../dtos';
 
 @ApiTags('Crawler - Papers')
