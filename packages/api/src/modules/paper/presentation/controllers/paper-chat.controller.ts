@@ -14,11 +14,10 @@ import {
 import { User } from '@scholub/database';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Request } from 'express';
-import { PrismaService } from '@/common/modules/prisma';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { PrismaService } from '@/common/modules/prisma';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
 
-// DTOs
 class StartChatDto {
   @ApiProperty({ description: 'Paper ID to chat about' })
   @IsString()
@@ -26,7 +25,7 @@ class StartChatDto {
   paperId: string;
 }
 
-class StartChatResponseDto {
+export class StartChatResponseDto {
   @ApiProperty({ description: 'Success message' })
   message: string;
 
