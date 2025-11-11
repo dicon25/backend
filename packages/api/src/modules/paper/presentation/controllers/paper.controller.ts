@@ -52,13 +52,12 @@ export class PaperController {
   @Get('search')
   @ApiOperation({
     summary:     'Search papers',
-    description: 'Elasticsearch를 사용하여 논문을 검색합니다. 제목, 요약, 저자, 카테고리에서 검색어를 찾습니다. 검색어가 제공되지 않으면 모든 논문을 반환합니다.',
+    description: 'MeiliSearch를 사용하여 논문을 검색합니다. 제목, 요약, 저자, 카테고리에서 검색어를 찾습니다. 검색어가 제공되지 않으면 모든 논문을 반환합니다.',
   })
   @ApiResponseType({ type: PaperListDto })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async searchPapers(@Query() dto: SearchPapersDto, @Req() req: Request & {
-    user: User;
+    user?: User;
   }) {
     const result = await this.paperFacade.listPapers({
       page:      1,
@@ -68,7 +67,7 @@ export class PaperController {
       filters:   { searchQuery: dto.query },
     });
 
-    const papers = await this.mapPapersToListItemDto(result.papers, req.user.id);
+    const papers = await this.mapPapersToListItemDto(result.papers, req.user?.id);
 
     return {
       papers,

@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PaperRepositoryPort } from '../../../domain/repositories';
-import { PaperSyncService } from '../../../infrastructure/search/elasticsearch';
+import { PaperSyncService } from '../../../infrastructure/search/meilisearch';
 import { DeletePaperCommand } from './delete-paper.command';
 
 @CommandHandler(DeletePaperCommand)
@@ -19,7 +19,7 @@ export class DeletePaperHandler implements ICommandHandler<DeletePaperCommand> {
 
     await this.paperRepository.delete(paper.id);
 
-    // Delete from Elasticsearch
+    // Delete from MeiliSearch
     try {
       await this.paperSyncService.deletePaper(paper.id);
     } catch (error) {

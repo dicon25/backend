@@ -4,7 +4,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@/common/modules/prisma';
 import { PaperEntity } from '../../../domain/entities';
 import { PaperRepositoryPort } from '../../../domain/repositories';
-import { PaperSyncService } from '../../../infrastructure/search/elasticsearch';
+import { PaperSyncService } from '../../../infrastructure/search/meilisearch';
 import { CreatePaperCommand } from './create-paper.command';
 
 @CommandHandler(CreatePaperCommand)
@@ -98,11 +98,11 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
       }
     }
 
-    // Index paper in Elasticsearch
+    // Index paper in MeiliSearch
     try {
       await this.paperSyncService.indexPaper(result);
     } catch (error) {
-      this.logger.warn(`Failed to index paper in Elasticsearch: ${result.id}`, error);
+      this.logger.warn(`Failed to index paper in MeiliSearch: ${result.id}`, error);
 
       // Don't throw - allow the operation to continue even if indexing fails
     }

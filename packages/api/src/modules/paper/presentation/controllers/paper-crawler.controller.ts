@@ -1,3 +1,12 @@
+import { CrawlerAuthGuard } from '@/common/guards';
+import { ApiResponseType } from '@/common/lib/swagger/decorators';
+import { PrismaService } from '@/common/modules/prisma';
+import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
+import { AssetFacade } from '@/modules/asset/application/facades';
+import { CreatePaperCommand } from '@/modules/paper/application/commands';
+import { PaperFacade } from '@/modules/paper/application/facades';
+import { PaperIndexService, PaperSyncService } from '@/modules/paper/infrastructure/search/meilisearch';
+import { Public } from '@/modules/user/presentation/decorators';
 import {
   BadRequestException,
   Body,
@@ -18,15 +27,6 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { CrawlerAuthGuard } from '@/common/guards';
-import { ApiResponseType } from '@/common/lib/swagger/decorators';
-import { PrismaService } from '@/common/modules/prisma';
-import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
-import { AssetFacade } from '@/modules/asset/application/facades';
-import { CreatePaperCommand } from '@/modules/paper/application/commands';
-import { PaperFacade } from '@/modules/paper/application/facades';
-import { PaperIndexService, PaperSyncService } from '@/modules/paper/infrastructure/search/elasticsearch';
-import { Public } from '@/modules/user/presentation/decorators';
 import { CreatePaperDto, PaperDetailDto } from '../dtos';
 
 @ApiTags('Crawler - Papers')
@@ -242,7 +242,7 @@ export class PaperCrawlerController {
   @Delete()
   @ApiOperation({
     summary:     'Delete all papers (crawler only)',
-    description: '크롤러 전용 엔드포인트로, 모든 논문을 삭제합니다. 논문과 관련된 S3 파일, Asset 테이블, Paper 테이블, Elasticsearch 인덱스의 모든 데이터가 삭제됩니다. 크롤러 인증이 필요합니다.',
+    description: '크롤러 전용 엔드포인트로, 모든 논문을 삭제합니다. 논문과 관련된 S3 파일, Asset 테이블, Paper 테이블, MeiliSearch 인덱스의 모든 데이터가 삭제됩니다. 크롤러 인증이 필요합니다.',
   })
   async deleteAllPapers() {
     const startTime = Date.now();
@@ -298,13 +298,13 @@ export class PaperCrawlerController {
 
     this.logger.log(`[deleteAllPapers] Asset deletion completed in ${Date.now() - assetDeletionStart}ms - deleted: ${deletedAssetCount}, failed: ${failedAssetCount}`);
 
-    // 5. Delete Elasticsearch index
+    // 5. Delete MeiliSearch index
     try {
       await this.paperIndexService.deleteIndex();
 
-      this.logger.log('[deleteAllPapers] Elasticsearch index deleted');
+      this.logger.log('[deleteAllPapers] MeiliSearch index deleted');
     } catch (error) {
-      this.logger.warn('[deleteAllPapers] Failed to delete Elasticsearch index', error);
+      this.logger.warn('[deleteAllPapers] Failed to delete MeiliSearch index', error);
     }
 
     this.logger.log(`[deleteAllPapers] Total time: ${Date.now() - startTime}ms`);

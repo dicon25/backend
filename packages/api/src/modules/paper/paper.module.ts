@@ -22,11 +22,11 @@ import {
 import { PaperRepositoryPort } from './domain/repositories';
 import { PaperRepository } from './infrastructure/persistence';
 import {
-  ElasticsearchService,
+  MeiliSearchService,
   PaperIndexService,
   PaperSearchRepository,
   PaperSyncService,
-} from './infrastructure/search/elasticsearch';
+} from './infrastructure/search/meilisearch';
 import { PaperController, PaperCrawlerController } from './presentation/controllers';
 import { PaperAdminController } from './presentation/controllers/paper-admin.controller';
 import { PaperRelationController } from './presentation/controllers/paper-relation.controller';
@@ -59,25 +59,13 @@ const queryHandlers = [
     ...commandHandlers,
     ...queryHandlers,
     PaperFacade,
-    ElasticsearchService,
+    MeiliSearchService,
     PaperIndexService,
     PaperSyncService,
-    {
-      provide:    PaperSearchRepository,
-      useFactory: (elasticsearchService: ElasticsearchService, paperIndexService: PaperIndexService, prisma: PrismaService) => {
-        if (elasticsearchService.isEnabled()) {
-          return new PaperSearchRepository(elasticsearchService, paperIndexService, prisma);
-        }
-
-        return null;
-      },
-      inject: [
-        ElasticsearchService, PaperIndexService, PrismaService,
-      ],
-    },
+    PaperSearchRepository,
     {
       provide:    PaperRepositoryPort,
-      useFactory: (prisma: PrismaService, paperSearchRepository: PaperSearchRepository | null, paperSyncService: PaperSyncService) => {
+      useFactory: (prisma: PrismaService, paperSearchRepository: PaperSearchRepository, paperSyncService: PaperSyncService) => {
         return new PaperRepository(prisma, paperSearchRepository, paperSyncService);
       },
       inject: [

@@ -8,16 +8,18 @@ import {
   PaperListOptions,
   PaperRepositoryPort,
 } from '@/modules/paper/domain/repositories';
-import { PaperSearchRepository, PaperSyncService } from '@/modules/paper/infrastructure/search/elasticsearch';
+import { PaperSearchRepository, PaperSyncService } from '@/modules/paper/infrastructure/search/meilisearch';
 import { PaperMapper } from '../mappers';
 
 @Injectable()
 export class PaperRepository implements PaperRepositoryPort {
   private readonly logger = new Logger(PaperRepository.name);
 
-  constructor(private readonly prisma: PrismaService,
-    private readonly paperSearchRepository: PaperSearchRepository | null,
-    private readonly paperSyncService: PaperSyncService | null) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paperSearchRepository: PaperSearchRepository,
+    private readonly paperSyncService: PaperSyncService,
+  ) {
   }
 
   async create(paper: Partial<PaperEntity>): Promise<PaperEntity> {
@@ -46,12 +48,12 @@ export class PaperRepository implements PaperRepositoryPort {
   }
 
   async list(options: PaperListOptions): Promise<PaginatedPapers> {
-    // Use Elasticsearch if searchQuery is provided and Elasticsearch is available
-    if (options.filters?.searchQuery && this.paperSearchRepository) {
+    // Use MeiliSearch if it's available (MeiliSearch supports empty queries for full search)
+    if (this.paperSearchRepository) {
       try {
         return await this.paperSearchRepository.search(options);
       } catch (error) {
-        this.logger.warn('Elasticsearch search failed, falling back to PostgreSQL', error);
+        this.logger.warn('MeiliSearch search failed, falling back to PostgreSQL', error);
 
         // Fall through to PostgreSQL search
       }
@@ -129,12 +131,12 @@ export class PaperRepository implements PaperRepositoryPort {
 
     const result = PaperMapper.toDomain(updated);
 
-    // Update in Elasticsearch
+    // Update in MeiliSearch
     if (this.paperSyncService) {
       try {
         await this.paperSyncService.updatePaper(id, data);
       } catch (error) {
-        this.logger.warn(`Failed to update paper in Elasticsearch: ${id}`, error);
+        this.logger.warn(`Failed to update paper in MeiliSearch: ${id}`, error);
 
         // Don't throw - allow the operation to continue even if indexing fails
       }
@@ -153,7 +155,7 @@ export class PaperRepository implements PaperRepositoryPort {
       data:  { totalViewCount: { increment: 1 } },
     });
 
-    // Update view count in Elasticsearch
+    // Update view count in MeiliSearch
     if (this.paperSyncService) {
       try {
         const paper = await this.findById(id);
@@ -162,7 +164,7 @@ export class PaperRepository implements PaperRepositoryPort {
           await this.paperSyncService.updatePaper(id, { totalViewCount: paper.totalViewCount });
         }
       } catch (error) {
-        this.logger.warn(`Failed to update view count in Elasticsearch: ${id}`, error);
+        this.logger.warn(`Failed to update view count in MeiliSearch: ${id}`, error);
 
         // Don't throw - allow the operation to continue even if indexing fails
       }
