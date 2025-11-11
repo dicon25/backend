@@ -6,7 +6,6 @@ import {
   CreateDiscussionCommand,
   CreateMessageCommand,
   DeleteMessageCommand,
-  ToggleMessageLikeCommand,
   UpdateMessageCommand,
 } from './commands';
 import { GetDiscussionDetailQuery, ListDiscussionMessagesQuery, ListDiscussionsByPaperQuery } from './queries';
@@ -55,13 +54,6 @@ export class DiscussionFacade {
 
   async deleteMessage(messageId: string, userId: string): Promise<void> {
     return await this.commandBus.execute(new DeleteMessageCommand(messageId, userId));
-  }
-
-  async toggleMessageLike(messageId: string,
-    userId: string): Promise<{
-    action: 'created' | 'deleted';
-  }> {
-    return await this.commandBus.execute(new ToggleMessageLikeCommand(messageId, userId));
   }
 }
 

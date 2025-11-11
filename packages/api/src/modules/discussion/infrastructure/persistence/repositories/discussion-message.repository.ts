@@ -37,16 +37,12 @@ export class DiscussionMessageRepository implements DiscussionMessageRepositoryP
         skip,
         take:    limit,
         orderBy: { createdAt: 'asc' },
-        include: userId ? { likes: { where: { userId } } } : undefined,
       }),
       this.prisma.discussionMessage.count({ where: { discussionId } }),
     ]);
 
     return {
-      messages: messages.map((msg: any) => ({
-        ...DiscussionMessageMapper.toDomain(msg),
-        isLikedByMe: userId ? (msg.likes?.length ?? 0) > 0 : undefined,
-      })),
+      messages: messages.map(msg => DiscussionMessageMapper.toDomain(msg)),
       total,
       page,
       limit,
@@ -66,38 +62,6 @@ export class DiscussionMessageRepository implements DiscussionMessageRepositoryP
 
   async delete(id: string): Promise<void> {
     await this.prisma.discussionMessage.delete({ where: { id } });
-  }
-
-  async toggleLike(messageId: string, userId: string): Promise<{
-    action: 'created' | 'deleted';
-  }> {
-    return await this.prisma.$transaction(async tx => {
-      const existingLike = await tx.discussionMessageLike.findUnique({ where: { userId_messageId: {
-        userId, messageId,
-      } } });
-
-      if (existingLike) {
-        await tx.discussionMessageLike.delete({ where: { id: existingLike.id } });
-
-        await tx.discussionMessage.update({
-          where: { id: messageId },
-          data:  { likeCount: { decrement: 1 } },
-        });
-
-        return { action: 'deleted' };
-      } else {
-        await tx.discussionMessageLike.create({ data: {
-          userId, messageId,
-        } });
-
-        await tx.discussionMessage.update({
-          where: { id: messageId },
-          data:  { likeCount: { increment: 1 } },
-        });
-
-        return { action: 'created' };
-      }
-    });
   }
 }
 

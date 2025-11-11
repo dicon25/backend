@@ -25,9 +25,8 @@ model User {
 
   userActivities UserActivity[]
 
-  discussions            Discussion[]
-  discussionMessages     DiscussionMessage[]
-  discussionMessageLikes DiscussionMessageLike[]
+  discussions        Discussion[]
+  discussionMessages DiscussionMessage[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

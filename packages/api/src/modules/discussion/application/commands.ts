@@ -33,12 +33,6 @@ export class DeleteMessageCommand {
   }
 }
 
-export class ToggleMessageLikeCommand {
-  constructor(public readonly messageId: string,
-    public readonly userId: string) {
-  }
-}
-
 // Handlers
 @CommandHandler(CreateDiscussionCommand)
 export class CreateDiscussionHandler implements ICommandHandler<CreateDiscussionCommand> {
@@ -165,24 +159,6 @@ export class DeleteMessageHandler implements ICommandHandler<DeleteMessageComman
     await this.messageRepository.delete(command.messageId);
 
     await this.discussionRepository.updateCounts(message.discussionId);
-  }
-}
-
-@CommandHandler(ToggleMessageLikeCommand)
-export class ToggleMessageLikeHandler implements ICommandHandler<ToggleMessageLikeCommand> {
-  constructor(private readonly messageRepository: DiscussionMessageRepositoryPort) {
-  }
-
-  async execute(command: ToggleMessageLikeCommand): Promise<{
-    action: 'created' | 'deleted';
-  }> {
-    const message = await this.messageRepository.findById(command.messageId);
-
-    if (!message) {
-      throw new NotFoundException('Message not found');
-    }
-
-    return await this.messageRepository.toggleLike(command.messageId, command.userId);
   }
 }
 

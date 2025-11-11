@@ -99,13 +99,7 @@ export class DiscussionMessageDto {
   content: string;
 
   @ApiProperty()
-  likeCount: number;
-
-  @ApiProperty()
   isEdited: boolean;
-
-  @ApiProperty({ required: false })
-  isLikedByMe?: boolean;
 
   @ApiProperty()
   createdAt: Date;

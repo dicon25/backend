@@ -24,7 +24,6 @@ export class DiscussionMessageMapper {
       discussionId: message.discussionId,
       userId:       message.userId,
       content:      message.content,
-      likeCount:    message.likeCount,
       isEdited:     message.isEdited,
       createdAt:    message.createdAt,
       updatedAt:    message.updatedAt,

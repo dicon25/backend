@@ -36,11 +36,7 @@ model DiscussionMessage {
 
   content String @db.Text
 
-  likeCount Int @default(0)
-
   isEdited Boolean @default(false)
-
-  likes DiscussionMessageLike[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -48,20 +44,4 @@ model DiscussionMessage {
   @@index([discussionId])
   @@index([userId])
   @@index([createdAt])
-}
-
-model DiscussionMessageLike {
-  id String @id @default(uuid())
-
-  messageId String
-  message   DiscussionMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([userId, messageId])
-  @@index([messageId])
-  @@index([userId])
 }

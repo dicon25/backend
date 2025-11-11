@@ -3,7 +3,6 @@ export class DiscussionMessageEntity {
   discussionId: string;
   userId:       string;
   content:      string;
-  likeCount:    number;
   isEdited:     boolean;
   createdAt:    Date;
   updatedAt:    Date;

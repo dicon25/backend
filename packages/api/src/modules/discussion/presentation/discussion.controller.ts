@@ -90,7 +90,7 @@ export class DiscussionController {
   @Get('discussions/:discussionId/messages')
   @ApiOperation({
     summary:     'Get messages in a discussion',
-    description: '특정 토론의 메시지 목록을 페이지네이션을 사용하여 조회합니다. 페이지 번호와 페이지당 항목 수를 쿼리 파라미터로 지정할 수 있으며, 기본값은 페이지 1, 페이지당 20개 항목입니다. 로그인한 사용자의 경우 자신이 좋아요를 누른 메시지 정보도 함께 반환됩니다.',
+    description: '특정 토론의 메시지 목록을 페이지네이션을 사용하여 조회합니다. 페이지 번호와 페이지당 항목 수를 쿼리 파라미터로 지정할 수 있으며, 기본값은 페이지 1, 페이지당 20개 항목입니다.',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -137,20 +137,6 @@ export class DiscussionController {
     await this.discussionFacade.deleteMessage(messageId, req.user.id);
 
     return { message: 'Message deleted successfully' };
-  }
-
-  @Post('discussions/:discussionId/messages/:messageId/like')
-  @ApiOperation({
-    summary:     'Toggle like on a message',
-    description: '토론 메시지에 대한 좋아요를 토글합니다. 이미 좋아요를 누른 경우 좋아요를 취소하고, 좋아요를 누르지 않은 경우 좋아요를 추가합니다. 로그인이 필요합니다.',
-  })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  async toggleMessageLike(@Param('messageId') messageId: string,
-    @Req() req: Request & {
-      user: any;
-    }) {
-    return await this.discussionFacade.toggleMessageLike(messageId, req.user.id);
   }
 }
 

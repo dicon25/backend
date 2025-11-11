@@ -8,7 +8,6 @@ import {
   CreateDiscussionHandler,
   CreateMessageHandler,
   DeleteMessageHandler,
-  ToggleMessageLikeHandler,
   UpdateMessageHandler,
 } from './application/commands';
 // Facade
@@ -25,7 +24,6 @@ const commandHandlers = [
   CreateMessageHandler,
   UpdateMessageHandler,
   DeleteMessageHandler,
-  ToggleMessageLikeHandler,
 ];
 
 const queryHandlers = [
