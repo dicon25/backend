@@ -12,7 +12,8 @@ model Paper {
 
   content Json
 
-  hashtags String[] @default([])
+  hashtags           String[] @default([])
+  translatedHashtags String[] @default([])
 
   doi    String  @unique
   url    String?
@@ -49,7 +50,6 @@ model Paper {
   updatedAt DateTime @updatedAt
 
   userActivities UserActivity[]
-  chatSessions   ChatSession[]
 
   @@index([doi])
   @@index([createdAt])

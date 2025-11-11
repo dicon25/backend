@@ -33,6 +33,15 @@ export class RecordPaperViewHandler implements ICommandHandler<RecordPaperViewCo
       data:  { totalViewCount: { increment: 1 } },
     });
 
+    // Create user activity for staying long time (only if userId is provided)
+    if (command.userId) {
+      await this.prisma.userActivity.create({ data: {
+        userId:  command.userId,
+        paperId: paper.id,
+        type:    'STAY_LONG_TIME',
+      } });
+    }
+
     return {
       success:     true,
       paperViewId: paperView.id,

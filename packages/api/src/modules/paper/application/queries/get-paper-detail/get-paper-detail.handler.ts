@@ -44,12 +44,8 @@ export class GetPaperDetailHandler implements IQueryHandler<GetPaperDetailQuery>
         isUnliked: reactions.some(r => r.type === 'UNLIKE'),
       };
 
-      // Create user activity
-      await this.prisma.userActivity.create({ data: {
-        userId:  query.userId,
-        paperId: paper.id,
-        type:    'VIEW_PAPER',
-      } });
+      // Note: VIEW_PAPER activity is no longer created here.
+      // STAY_LONG_TIME activity is created when the user views the paper for a long time via recordPaperView endpoint.
     }
 
     return {

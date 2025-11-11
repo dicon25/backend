@@ -26,7 +26,7 @@ export class UserCrawlerController {
   @Get('activities')
   @ApiOperation({
     summary:     'Get user activities with interested hashtags (crawler only)',
-    description: '크롤러 전용 엔드포인트로, 모든 유저의 액티비티 정보를 조회합니다. 각 유저의 userId와 interestedHashtags(사용자의 해시태그 + 사용자가 본 논문들의 해시태그 집합)를 반환합니다.',
+    description: '크롤러 전용 엔드포인트로, 모든 유저의 액티비티 정보를 조회합니다. 각 유저의 userId와 interestedHashtags(사용자의 해시태그 + UserActivity에서 REACT_UNLIKE를 제외한 타입의 논문들의 hashtags 집합)를 반환합니다.',
   })
   @ApiResponse({
     type:        [UserActivityDto],
@@ -40,38 +40,42 @@ export class UserCrawlerController {
       hashtags: true,
     } });
 
-    // Get all user paper views with paper hashtags
-    const paperViews = await this.prisma.paperView.findMany({
-      where:  { userId: { not: null } },
-      select: {
-        userId: true,
-        paper:  { select: { hashtags: true } },
+    // Get all user activities (excluding REACT_UNLIKE) with paper hashtags and translatedHashtags
+    const userActivities = await this.prisma.userActivity.findMany({
+      where: {
+        type: { not: 'REACT_UNLIKE' }, paperId: { not: null },
       },
+      include: { paper: { select: {
+        hashtags: true, translatedHashtags: true,
+      } } },
     });
 
     // Group paper hashtags by user
     const userPaperHashtagsMap = new Map<string, Set<string>>;
 
-    for (const view of paperViews) {
-      if (view.userId) {
-        if (!userPaperHashtagsMap.has(view.userId)) {
-          userPaperHashtagsMap.set(view.userId, new Set);
+    for (const activity of userActivities) {
+      if (activity.userId && activity.paper) {
+        if (!userPaperHashtagsMap.has(activity.userId)) {
+          userPaperHashtagsMap.set(activity.userId, new Set);
         }
 
-        const hashtags = view.paper.hashtags ?? [];
+        const hashtags = [
+          ...activity.paper.hashtags ?? [],
+          ...activity.paper.translatedHashtags ?? [],
+        ];
 
         for (const hashtag of hashtags) {
-          userPaperHashtagsMap.get(view.userId)!.add(hashtag);
+          userPaperHashtagsMap.get(activity.userId)!.add(hashtag);
         }
       }
     }
 
-    // Combine user hashtags with paper hashtags
+    // Combine user hashtags with paper hashtags from activities
     return users
       .map(user => {
         const userHashtags = user.hashtags ?? [];
-        const paperHashtags = Array.from(userPaperHashtagsMap.get(user.id) ?? []);
-        const interestedHashtags = Array.from(new Set([...userHashtags, ...paperHashtags]));
+        const activityHashtags = Array.from(userPaperHashtagsMap.get(user.id) ?? []);
+        const interestedHashtags = Array.from(new Set([...userHashtags, ...activityHashtags]));
 
         return {
           userId: user.id,

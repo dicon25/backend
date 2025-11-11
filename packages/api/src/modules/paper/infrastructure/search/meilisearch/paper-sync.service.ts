@@ -32,19 +32,20 @@ export class PaperSyncService {
 
       await index.addDocuments([
         {
-          id:                paper.id,
-          paperId:           paper.paperId,
-          title:             paper.title,
-          summary:           paper.summary,
-          translatedSummary: paper.translatedSummary,
-          authors:           paper.authors,
-          categories:        paper.categories,
-          hashtags:          paper.hashtags,
-          doi:               paper.doi,
-          issuedAt:          paper.issuedAt ? paper.issuedAt.toISOString() : null,
-          createdAt:         paper.createdAt.toISOString(),
-          likeCount:         paper.likeCount,
-          totalViewCount:    paper.totalViewCount,
+          id:                 paper.id,
+          paperId:            paper.paperId,
+          title:              paper.title,
+          summary:            paper.summary,
+          translatedSummary:  paper.translatedSummary,
+          authors:            paper.authors,
+          categories:         paper.categories,
+          hashtags:           paper.hashtags,
+          translatedHashtags: paper.translatedHashtags,
+          doi:                paper.doi,
+          issuedAt:           paper.issuedAt ? paper.issuedAt.toISOString() : null,
+          createdAt:          paper.createdAt.toISOString(),
+          likeCount:          paper.likeCount,
+          totalViewCount:     paper.totalViewCount,
         },
       ]);
 
@@ -75,12 +76,14 @@ export class PaperSyncService {
         id: paperId,
       };
 
+      if (paper.paperId !== undefined) updateDoc.paperId = paper.paperId;
       if (paper.title !== undefined) updateDoc.title = paper.title;
       if (paper.summary !== undefined) updateDoc.summary = paper.summary;
       if (paper.translatedSummary !== undefined) updateDoc.translatedSummary = paper.translatedSummary;
       if (paper.authors !== undefined) updateDoc.authors = paper.authors;
       if (paper.categories !== undefined) updateDoc.categories = paper.categories;
       if (paper.hashtags !== undefined) updateDoc.hashtags = paper.hashtags;
+      if (paper.translatedHashtags !== undefined) updateDoc.translatedHashtags = paper.translatedHashtags;
       if (paper.doi !== undefined) updateDoc.doi = paper.doi;
       if (paper.issuedAt !== undefined) updateDoc.issuedAt = paper.issuedAt ? paper.issuedAt.toISOString() : null;
       if (paper.likeCount !== undefined) updateDoc.likeCount = paper.likeCount;

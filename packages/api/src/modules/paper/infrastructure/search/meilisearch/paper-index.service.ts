@@ -78,15 +78,17 @@ export class PaperIndexService {
        * 1. title - 제목이 가장 중요 (논문의 핵심)
        * 2. translatedSummary - 한국어 번역본 (한국어 검색 시 가장 중요)
        * 3. summary - 원문 요약 (영어 검색 시 중요)
-       * 4. hashtags - 태그 기반 검색
-       * 5. categories - 카테고리 (분야별 검색)
-       * 6. authors - 저자명 (저자 검색)
+       * 4. hashtags - 영어 태그 기반 검색
+       * 5. translatedHashtags - 한국어 태그 기반 검색
+       * 6. categories - 카테고리 (분야별 검색)
+       * 7. authors - 저자명 (저자 검색)
        */
       await index.updateSearchableAttributes([
         'title',
         'translatedSummary',
         'summary',
         'hashtags',
+        'translatedHashtags',
         'categories',
         'authors',
       ]);
@@ -100,6 +102,7 @@ export class PaperIndexService {
         'authors',
         'categories',
         'hashtags',
+        'translatedHashtags',
         'doi',
         'issuedAt',
         'createdAt',
@@ -133,6 +136,9 @@ export class PaperIndexService {
         'categories',
         'authors',
         'hashtags',
+        'translatedHashtags',
+        'paperId',
+        'doi',
         'issuedAt',
         'createdAt',
         'likeCount',

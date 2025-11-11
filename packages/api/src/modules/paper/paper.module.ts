@@ -29,6 +29,7 @@ import {
 } from './infrastructure/search/meilisearch';
 import { PaperController, PaperCrawlerController } from './presentation/controllers';
 import { PaperAdminController } from './presentation/controllers/paper-admin.controller';
+import { PaperChatController } from './presentation/controllers/paper-chat.controller';
 import { PaperRelationController } from './presentation/controllers/paper-relation.controller';
 import { UserCrawlerController } from './presentation/controllers/user-crawler.controller';
 
@@ -75,7 +76,12 @@ const queryHandlers = [
     CrawlerAuthGuard,
   ],
   controllers: [
-    PaperController, PaperCrawlerController, PaperAdminController, PaperRelationController, UserCrawlerController,
+    PaperController,
+    PaperCrawlerController,
+    PaperAdminController,
+    PaperRelationController,
+    PaperChatController,
+    UserCrawlerController,
   ],
   exports: [PaperFacade],
 })

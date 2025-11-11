@@ -6,16 +6,17 @@ export class CreatePaperCommand extends DataClass {
   title:              string;
   categories:         string[];
   authors:            string[];
-  summary:            string;
-  translatedSummary?: string;
-  content:            Prisma.JsonValue;
-  doi:                string;
-  pdfId:              string;
-  url?:               string;
-  pdfUrl?:            string;
-  issuedAt?:          Date;
-  thumbnailId?:       string;
-  hashtags?:          string[];
-  interestedUserIds?: string[];
+  summary:             string;
+  translatedSummary?:  string;
+  content:             Prisma.JsonValue;
+  doi:                 string;
+  pdfId:               string;
+  url?:                string;
+  pdfUrl?:             string;
+  issuedAt?:           Date;
+  thumbnailId?:        string;
+  hashtags?:           string[];
+  translatedHashtags?: string[];
+  interestedUserIds?:  string[];
 }
 

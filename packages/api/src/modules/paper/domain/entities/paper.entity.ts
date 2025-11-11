@@ -7,10 +7,11 @@ export class PaperEntity {
   categories:         string[];
   authors:            string[];
   summary:            string;
-  translatedSummary?: string;
-  content:            Prisma.JsonValue;
-  hashtags:           string[];
-  doi:                string;
+  translatedSummary?:  string;
+  content:             Prisma.JsonValue;
+  hashtags:            string[];
+  translatedHashtags:  string[];
+  doi:                 string;
   url?:               string;
   pdfUrl?:            string;
   issuedAt?:          Date;

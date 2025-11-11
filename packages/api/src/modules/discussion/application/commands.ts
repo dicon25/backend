@@ -89,7 +89,7 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
     await this.prisma.userActivity.create({ data: {
       userId:  command.userId,
       paperId: discussion.paperId,
-      type:    'JOIN_DISCUSSION',
+      type:    'CHAT_DISCUSSION',
     } });
 
     // Get all users who participated in this discussion (excluding the message author)

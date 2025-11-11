@@ -65,11 +65,13 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
         data:  { [field]: { increment: 1 } },
       });
 
-      // Create user activity
+      // Create user activity based on reaction type
+      const activityType = command.type === ReactionType.LIKE ? 'REACT_LIKE' : 'REACT_UNLIKE';
+
       await tx.userActivity.create({ data: {
         userId:  command.userId,
         paperId: command.paperId,
-        type:    'REACT',
+        type:    activityType,
       } });
 
       return { action: 'created' };

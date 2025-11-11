@@ -225,26 +225,27 @@ export class PaperRepository implements PaperRepositoryPort {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const papers = await this.prisma.$queryRaw<Array<{
-      id:                string;
-      paperId:           string;
-      title:             string;
-      categories:        string[];
-      authors:           string[];
-      summary:           string;
-      translatedSummary: string | null;
-      content:           Prisma.JsonValue;
-      hashtags:          string[];
-      doi:               string;
-      url:               string | null;
-      pdfUrl:            string | null;
-      issuedAt:          Date | null;
-      likeCount:         number;
-      unlikeCount:       number;
-      totalViewCount:    number;
-      thumbnailId:       string | null;
-      pdfId:             string;
-      createdAt:         Date;
-      updatedAt:         Date;
+      id:                 string;
+      paperId:            string;
+      title:              string;
+      categories:         string[];
+      authors:            string[];
+      summary:            string;
+      translatedSummary:  string | null;
+      content:            Prisma.JsonValue;
+      hashtags:           string[];
+      translatedHashtags: string[];
+      doi:                string;
+      url:                string | null;
+      pdfUrl:             string | null;
+      issuedAt:           Date | null;
+      likeCount:          number;
+      unlikeCount:        number;
+      totalViewCount:     number;
+      thumbnailId:        string | null;
+      pdfId:              string;
+      createdAt:          Date;
+      updatedAt:          Date;
     }>>`
       SELECT *
       FROM "Paper"
@@ -262,26 +263,27 @@ export class PaperRepository implements PaperRepositoryPort {
     daysAgo.setDate(daysAgo.getDate() - days);
 
     const papers = await this.prisma.$queryRaw<Array<{
-      id:                string;
-      paperId:           string;
-      title:             string;
-      categories:        string[];
-      authors:           string[];
-      summary:           string;
-      translatedSummary: string | null;
-      content:           Prisma.JsonValue;
-      hashtags:          string[];
-      doi:               string;
-      url:               string | null;
-      pdfUrl:            string | null;
-      issuedAt:          Date | null;
-      likeCount:         number;
-      unlikeCount:       number;
-      totalViewCount:    number;
-      thumbnailId:       string | null;
-      pdfId:             string;
-      createdAt:         Date;
-      updatedAt:         Date;
+      id:                 string;
+      paperId:            string;
+      title:              string;
+      categories:         string[];
+      authors:            string[];
+      summary:            string;
+      translatedSummary:  string | null;
+      content:            Prisma.JsonValue;
+      hashtags:           string[];
+      translatedHashtags: string[];
+      doi:                string;
+      url:                string | null;
+      pdfUrl:             string | null;
+      issuedAt:           Date | null;
+      likeCount:          number;
+      unlikeCount:        number;
+      totalViewCount:     number;
+      thumbnailId:        string | null;
+      pdfId:              string;
+      createdAt:          Date;
+      updatedAt:          Date;
     }>>`
       SELECT *
       FROM "Paper"

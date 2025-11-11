@@ -1,5 +1,4 @@
 import { AssetModule } from '@modules/asset';
-import { ChatModule } from '@modules/chat';
 import { DiscussionModule } from '@modules/discussion';
 import { NotificationModule } from '@modules/notification';
 import { PaperModule } from '@modules/paper';
@@ -15,7 +14,6 @@ const features = [
   PaperModule,
   ReactionModule,
   DiscussionModule,
-  ChatModule,
   NotificationModule,
   SubscriptionModule,
   PreferenceModule,

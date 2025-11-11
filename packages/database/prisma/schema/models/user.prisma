@@ -23,7 +23,6 @@ model User {
 
   userRecommendations UserRecommendation[]
 
-  chatSessions   ChatSession[]
   userActivities UserActivity[]
 
   discussions            Discussion[]
