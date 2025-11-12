@@ -1,5 +1,12 @@
-import { Prisma } from '@scholub/database';
+import { NotificationType, Prisma } from '@scholub/database';
 import { DataClass } from 'dataclasses';
+
+export interface CreatePaperNotification {
+  type:            NotificationType;
+  message:         string;
+  relatedPaperId?: string;
+  userIds:         string[];
+}
 
 export class CreatePaperCommand extends DataClass {
   paperId:             string;
@@ -18,5 +25,6 @@ export class CreatePaperCommand extends DataClass {
   hashtags?:           string[];
   translatedHashtags?: string[];
   interestedUserIds?:  string[];
+  notifications?:      CreatePaperNotification[];
 }
 

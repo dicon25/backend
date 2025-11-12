@@ -34,6 +34,7 @@ import { AssetModule } from '../asset';
 import { AssetFacade } from '../asset/application/facades';
 import { UserEntity } from '../user/domain';
 import { UserModule } from '../user/user.module';
+import { NotificationService } from './application/services/notification.service';
 
 export class NotificationEntity {
   id:              string;
@@ -402,11 +403,13 @@ const queryHandlers = [ListNotificationsHandler, CountUnreadHandler];
     CqrsModule, PrismaModule, UserModule, AssetModule,
   ],
   providers: [
-    ...commandHandlers, ...queryHandlers, NotificationFacade,
+    ...commandHandlers, ...queryHandlers, NotificationFacade, NotificationService,
   ],
   controllers: [NotificationController],
-  exports:     [NotificationFacade],
+  exports:     [NotificationFacade, NotificationService],
 })
 export class NotificationModule {
 }
+
+export { NotificationService } from './application/services/notification.service';
 

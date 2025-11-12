@@ -4,6 +4,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { CrawlerAuthGuard } from '@/common/guards';
 import { PrismaModule, PrismaService } from '@/common/modules/prisma';
 import { AssetModule } from '../asset';
+import { NotificationModule } from '../notification';
 import { UserModule } from '../user/user.module';
 import { CreatePaperHandler, DeletePaperHandler, RecordPaperViewHandler } from './application/commands';
 import { PaperFacade } from './application/facades';
@@ -54,7 +55,12 @@ const queryHandlers = [
 
 @Module({
   imports: [
-    CqrsModule, PrismaModule, ConfigModule, UserModule, AssetModule,
+    CqrsModule,
+    PrismaModule,
+    ConfigModule,
+    UserModule,
+    AssetModule,
+    NotificationModule,
   ],
   providers: [
     ...commandHandlers,
