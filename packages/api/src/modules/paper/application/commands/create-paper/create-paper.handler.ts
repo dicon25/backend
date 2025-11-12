@@ -1,7 +1,7 @@
-import { Logger } from '@nestjs/common';
-import { ConflictException } from '@nestjs/common';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@/common/modules/prisma';
+import { ConflictException, Logger } from '@nestjs/common';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { RelationType } from '@scholub/database';
 import { PaperEntity } from '../../../domain/entities';
 import { PaperRepositoryPort } from '../../../domain/repositories';
 import { PaperSyncService } from '../../../infrastructure/search/meilisearch';
@@ -97,6 +97,66 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
 
         this.logger.log(`[CreatePaperHandler] User hashtags updated in ${Date.now() - hashtagUpdateStart}ms`);
       }
+    }
+
+    // Process notifications if provided
+    if (command.notifications && command.notifications.length > 0) {
+      const notificationStart = Date.now();
+
+      for (const notification of command.notifications) {
+        try {
+          // Handle PaperRelation for OPPOSING_PAPER and SIMILAR_PAPER
+          let relatedPaperInternalId: string | undefined;
+
+          if ((notification.type === 'OPPOSING_PAPER' || notification.type === 'SIMILAR_PAPER') && notification.relatedPaperId) {
+            // Find related paper by paperId
+            const relatedPaper = await this.prisma.paper.findUnique({ where: { paperId: notification.relatedPaperId } });
+
+            if (relatedPaper) {
+              relatedPaperInternalId = relatedPaper.id;
+
+              // Create PaperRelation
+              const relationType: RelationType = notification.type === 'OPPOSING_PAPER' ? 'OPPOSING' : 'SIMILAR';
+
+              await this.prisma.paperRelation.upsert({
+                where: {
+                  sourcePaperId_relatedPaperId_type: {
+                    sourcePaperId:  result.id,
+                    relatedPaperId: relatedPaper.id,
+                    type:           relationType,
+                  },
+                },
+                create: {
+                  sourcePaperId:  result.id,
+                  relatedPaperId: relatedPaper.id,
+                  type:           relationType,
+                },
+                update: {},
+              });
+
+              this.logger.debug(`PaperRelation created: ${result.id} -> ${relatedPaper.id} (${relationType})`);
+            } else {
+              this.logger.warn(`Related paper not found: ${notification.relatedPaperId}`);
+            }
+          }
+
+          // Send notifications to users
+          await this.prisma.notification.createMany({ data: notification.userIds.map(userId => ({
+            userId,
+            type:           notification.type,
+            message:        notification.message,
+            relatedPaperId: relatedPaperInternalId,
+          })) });
+
+          this.logger.debug(`Notifications sent: ${notification.type} to ${notification.userIds.length} users`);
+        } catch (error) {
+          this.logger.error(`Failed to process notification: ${notification.type}`, error);
+
+          // Don't throw - allow the operation to continue
+        }
+      }
+
+      this.logger.log(`[CreatePaperHandler] Notifications processed in ${Date.now() - notificationStart}ms`);
     }
 
     // Index paper in MeiliSearch

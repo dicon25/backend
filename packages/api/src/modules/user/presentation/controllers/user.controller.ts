@@ -8,6 +8,8 @@ import {
   Controller,
   Get,
   Logger,
+  NotFoundException,
+  Param,
   Patch,
   UploadedFile,
   UseInterceptors,
@@ -20,8 +22,11 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PrismaService } from '@/common/modules/prisma';
+import { S3Service } from '@/common/modules/s3';
 import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
 import { UpdateProfileDto } from '../dtos/request/update-profile.dto';
+import { PublicUserProfileDto } from '../dtos/response/public-user-profile.dto';
 import { UserDetailResponseDto } from '../dtos/response/user-detail.dto';
 
 @ApiTags('User')
@@ -29,8 +34,12 @@ import { UserDetailResponseDto } from '../dtos/response/user-detail.dto';
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
-  constructor(private readonly queryBus: QueryBus,
-    private readonly commandBus: CommandBus) {
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus,
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {
   }
 
   @Get('me')
@@ -101,5 +110,40 @@ export class UserController {
     const detailResult = await this.queryBus.execute<UserDetailQuery, UserDetailResult>(query);
 
     return UserDetailResponseDto.from(detailResult);
+  }
+
+  @Get(':userId/profile')
+  @ApiOperation({
+    summary:     'Get public user profile by userId',
+    description: 'userId로 다른 사용자의 공개 프로필 정보(email, name, profileImageUrl)를 조회합니다. Private 엔드포인트로 로그인이 필요합니다.',
+  })
+  @ApiResponseType({
+    type:        PublicUserProfileDto,
+    description: 'User public profile',
+    errors:      [
+      400, 401, 404, 500,
+    ],
+  })
+  async getUserProfile(@Param('userId') userId: string): Promise<PublicUserProfileDto> {
+    const user = await this.prisma.user.findUnique({
+      where:   { id: userId },
+      include: { avatar: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let profileImageUrl: string | undefined;
+
+    if (user.avatar) {
+      profileImageUrl = this.s3Service.getPublicUrl(user.avatar.key);
+    }
+
+    return PublicUserProfileDto.from({
+      email: user.email,
+      name:  user.name,
+      profileImageUrl,
+    });
   }
 }
