@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@/common/modules/prisma';
+import { NotificationService } from '@/modules/notification/application/services/notification.service';
 import { DiscussionEntity, DiscussionMessageEntity } from '../domain/entities';
 import { DiscussionMessageRepositoryPort, DiscussionRepositoryPort } from '../domain/repositories';
 
@@ -62,7 +63,8 @@ export class CreateDiscussionHandler implements ICommandHandler<CreateDiscussion
 export class CreateMessageHandler implements ICommandHandler<CreateMessageCommand> {
   constructor(private readonly discussionRepository: DiscussionRepositoryPort,
     private readonly messageRepository: DiscussionMessageRepositoryPort,
-    private readonly prisma: PrismaService) {
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService) {
   }
 
   async execute(command: CreateMessageCommand): Promise<DiscussionMessageEntity> {
@@ -106,13 +108,14 @@ export class CreateMessageHandler implements ICommandHandler<CreateMessageComman
 
     // Create notifications for all participants
     if (participantUserIds.size > 0) {
-      await this.prisma.notification.createMany({ data: Array.from(participantUserIds).map(userId => ({
-        userId,
-        type:           'DISCUSSION_ACTIVITY',
-        message:        notificationMessage,
-        relatedPaperId: discussion.paperId,
-        relatedUserId:  command.userId,
-      })) });
+      await this.notificationService.createBulkNotifications({
+        userIds:             Array.from(participantUserIds),
+        type:                'DISCUSSION_ACTIVITY',
+        message:             notificationMessage,
+        relatedPaperId:      discussion.paperId,
+        relatedDiscussionId: command.discussionId,
+        relatedUserId:       command.userId,
+      });
     }
 
     return message;

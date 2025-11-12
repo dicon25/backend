@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@/common/modules/prisma';
 // Other modules
+import { NotificationModule } from '../notification';
 import { UserModule } from '../user/user.module';
 // Commands & Queries
 import {
@@ -34,7 +35,7 @@ const queryHandlers = [
 
 @Module({
   imports: [
-    CqrsModule, PrismaModule, UserModule,
+    CqrsModule, PrismaModule, UserModule, NotificationModule,
   ],
   providers: [
     ...commandHandlers,

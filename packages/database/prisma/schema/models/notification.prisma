@@ -11,6 +11,9 @@ model Notification {
   relatedPaperId String?
   relatedPaper   Paper?  @relation(fields: [relatedPaperId], references: [id], onDelete: SetNull)
 
+  relatedDiscussionId String?
+  relatedDiscussion   Discussion? @relation("DiscussionNotifications", fields: [relatedDiscussionId], references: [id], onDelete: SetNull)
+
   relatedUserId String?
   relatedUser   User?   @relation("RelatedUserNotifications", fields: [relatedUserId], references: [id], onDelete: SetNull)
 

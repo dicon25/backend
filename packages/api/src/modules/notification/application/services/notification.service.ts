@@ -3,19 +3,21 @@ import { NotificationType } from '@scholub/database';
 import { PrismaService } from '@/common/modules/prisma';
 
 export interface CreateNotificationOptions {
-  userId:          string;
-  type:            NotificationType;
-  message:         string;
-  relatedPaperId?: string;
-  relatedUserId?:  string;
+  userId:               string;
+  type:                 NotificationType;
+  message:              string;
+  relatedPaperId?:      string;
+  relatedDiscussionId?: string;
+  relatedUserId?:       string;
 }
 
 export interface CreateBulkNotificationsOptions {
-  userIds:         string[];
-  type:            NotificationType;
-  message:         string;
-  relatedPaperId?: string;
-  relatedUserId?:  string;
+  userIds:              string[];
+  type:                 NotificationType;
+  message:              string;
+  relatedPaperId?:      string;
+  relatedDiscussionId?: string;
+  relatedUserId?:       string;
 }
 
 /**
@@ -36,11 +38,12 @@ export class NotificationService {
   async createNotification(options: CreateNotificationOptions): Promise<void> {
     try {
       await this.prisma.notification.create({ data: {
-        userId:         options.userId,
-        type:           options.type,
-        message:        options.message,
-        relatedPaperId: options.relatedPaperId,
-        relatedUserId:  options.relatedUserId,
+        userId:               options.userId,
+        type:                 options.type,
+        message:              options.message,
+        relatedPaperId:       options.relatedPaperId,
+        relatedDiscussionId: options.relatedDiscussionId,
+        relatedUserId:        options.relatedUserId,
       } });
 
       this.logger.debug(`Notification created for user ${options.userId}: ${options.type}`);
@@ -64,11 +67,12 @@ export class NotificationService {
 
     try {
       await this.prisma.notification.createMany({ data: options.userIds.map(userId => ({
-        userId,
-        type:           options.type,
-        message:        options.message,
-        relatedPaperId: options.relatedPaperId,
-        relatedUserId:  options.relatedUserId,
+        userId:               userId,
+        type:                 options.type,
+        message:              options.message,
+        relatedPaperId:       options.relatedPaperId,
+        relatedDiscussionId: options.relatedDiscussionId,
+        relatedUserId:        options.relatedUserId,
       })) });
 
       this.logger.log(`Bulk notifications created for ${options.userIds.length} users: ${options.type}`);
