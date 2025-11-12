@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { User } from '@scholub/database';
 import { Request } from 'express';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
@@ -39,7 +40,7 @@ export class DiscussionController {
   async createDiscussion(@Param('paperId') paperId: string,
     @Body() dto: CreateDiscussionDto,
     @Req() req: Request & {
-      user: any;
+      user: User;
     }) {
     return await this.discussionFacade.createDiscussion(paperId,
       dto.title,
@@ -52,7 +53,9 @@ export class DiscussionController {
     summary:     'Get discussions for a paper',
     description: '특정 논문에 대한 토론 목록을 조회합니다. 인증이 필요하지 않습니다.',
   })
-  @ApiResponseType({ type: [DiscussionDto] })
+  @ApiResponseType({
+    type: DiscussionDto, isArray: true,
+  })
   async listDiscussions(@Param('paperId') paperId: string) {
     return await this.discussionFacade.listDiscussionsByPaper(paperId);
   }
@@ -77,7 +80,7 @@ export class DiscussionController {
   async createMessage(@Param('discussionId') discussionId: string,
     @Body() dto: CreateMessageDto,
     @Req() req: Request & {
-      user: any;
+      user: User;
     }) {
     return await this.discussionFacade.createMessage(discussionId, req.user.id, dto.content);
   }
@@ -89,10 +92,12 @@ export class DiscussionController {
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiResponseType({ type: [DiscussionMessageDto] })
+  @ApiResponseType({
+    type: DiscussionMessageDto, isArray: true,
+  })
   async listMessages(@Param('discussionId') discussionId: string,
     @Req() req: Request & {
-      user?: any;
+      user?: User;
     }) {
     const userId = req.user?.id;
 
@@ -109,7 +114,7 @@ export class DiscussionController {
   async updateMessage(@Param('messageId') messageId: string,
     @Body() dto: UpdateMessageDto,
     @Req() req: Request & {
-      user: any;
+      user: User;
     }) {
     return await this.discussionFacade.updateMessage(messageId, req.user.id, dto.content);
   }
@@ -123,7 +128,7 @@ export class DiscussionController {
   @UseGuards(JwtAuthGuard)
   async deleteMessage(@Param('messageId') messageId: string,
     @Req() req: Request & {
-      user: any;
+      user: User;
     }) {
     await this.discussionFacade.deleteMessage(messageId, req.user.id);
 
