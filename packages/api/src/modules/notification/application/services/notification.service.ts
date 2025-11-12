@@ -38,18 +38,20 @@ export class NotificationService {
   async createNotification(options: CreateNotificationOptions): Promise<void> {
     try {
       await this.prisma.notification.create({ data: {
-        userId:               options.userId,
-        type:                 options.type,
-        message:              options.message,
-        relatedPaperId:       options.relatedPaperId,
+        userId:              options.userId,
+        type:                options.type,
+        message:             options.message,
+        relatedPaperId:      options.relatedPaperId,
         relatedDiscussionId: options.relatedDiscussionId,
-        relatedUserId:        options.relatedUserId,
+        relatedUserId:       options.relatedUserId,
       } });
 
       this.logger.debug(`Notification created for user ${options.userId}: ${options.type}`);
 
-      // TODO: 향후 이메일 발송 로직 추가
-      // await this.sendEmailNotification(options);
+      /*
+       * TODO: 향후 이메일 발송 로직 추가
+       * await this.sendEmailNotification(options);
+       */
     } catch (error) {
       this.logger.error(`Failed to create notification for user ${options.userId}`, error);
 
@@ -67,18 +69,20 @@ export class NotificationService {
 
     try {
       await this.prisma.notification.createMany({ data: options.userIds.map(userId => ({
-        userId:               userId,
-        type:                 options.type,
-        message:              options.message,
-        relatedPaperId:       options.relatedPaperId,
+        userId:              userId,
+        type:                options.type,
+        message:             options.message,
+        relatedPaperId:      options.relatedPaperId,
         relatedDiscussionId: options.relatedDiscussionId,
-        relatedUserId:        options.relatedUserId,
+        relatedUserId:       options.relatedUserId,
       })) });
 
       this.logger.log(`Bulk notifications created for ${options.userIds.length} users: ${options.type}`);
 
-      // TODO: 향후 이메일 일괄 발송 로직 추가
-      // await this.sendBulkEmailNotifications(options);
+      /*
+       * TODO: 향후 이메일 일괄 발송 로직 추가
+       * await this.sendBulkEmailNotifications(options);
+       */
     } catch (error) {
       this.logger.error(`Failed to create bulk notifications for ${options.userIds.length} users`, error);
 
@@ -86,13 +90,17 @@ export class NotificationService {
     }
   }
 
-  // TODO: 이메일 발송 로직 (향후 구현)
-  // private async sendEmailNotification(options: CreateNotificationOptions): Promise<void> {
-  //   // 이메일 발송 로직
-  // }
+  /*
+   * TODO: 이메일 발송 로직 (향후 구현)
+   * private async sendEmailNotification(options: CreateNotificationOptions): Promise<void> {
+   *   // 이메일 발송 로직
+   * }
+   */
 
-  // private async sendBulkEmailNotifications(options: CreateBulkNotificationsOptions): Promise<void> {
-  //   // 이메일 일괄 발송 로직
-  // }
+  /*
+   * private async sendBulkEmailNotifications(options: CreateBulkNotificationsOptions): Promise<void> {
+   *   // 이메일 일괄 발송 로직
+   * }
+   */
 }
 
