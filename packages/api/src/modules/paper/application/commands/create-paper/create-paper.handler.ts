@@ -1,10 +1,11 @@
-import { PrismaService } from '@/common/modules/prisma';
 import { ConflictException, Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { RelationType } from '@scholub/database';
-import { PaperEntity } from '../../../domain/entities';
-import { PaperRepositoryPort } from '../../../domain/repositories';
-import { PaperSyncService } from '../../../infrastructure/search/meilisearch';
+import { PrismaService } from '@/common/modules/prisma';
+import { NotificationService } from '@/modules/notification/application/services/notification.service';
+import { PaperEntity } from '@/modules/paper/domain/entities';
+import { PaperRepositoryPort } from '@/modules/paper/domain/repositories';
+import { PaperSyncService } from '@/modules/paper/infrastructure/search/meilisearch';
 import { CreatePaperCommand } from './create-paper.command';
 
 @CommandHandler(CreatePaperCommand)
@@ -13,7 +14,8 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
 
   constructor(private readonly paperRepository: PaperRepositoryPort,
     private readonly prisma: PrismaService,
-    private readonly paperSyncService: PaperSyncService) {
+    private readonly paperSyncService: PaperSyncService,
+    private readonly notificationService: NotificationService) {
   }
 
   async execute(command: CreatePaperCommand): Promise<PaperEntity> {
@@ -119,13 +121,11 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
               const relationType: RelationType = notification.type === 'OPPOSING_PAPER' ? 'OPPOSING' : 'SIMILAR';
 
               await this.prisma.paperRelation.upsert({
-                where: {
-                  sourcePaperId_relatedPaperId_type: {
-                    sourcePaperId:  result.id,
-                    relatedPaperId: relatedPaper.id,
-                    type:           relationType,
-                  },
-                },
+                where: { sourcePaperId_relatedPaperId_type: {
+                  sourcePaperId:  result.id,
+                  relatedPaperId: relatedPaper.id,
+                  type:           relationType,
+                } },
                 create: {
                   sourcePaperId:  result.id,
                   relatedPaperId: relatedPaper.id,
@@ -141,12 +141,12 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
           }
 
           // Send notifications to users
-          await this.prisma.notification.createMany({ data: notification.userIds.map(userId => ({
-            userId,
+          await this.notificationService.createBulkNotifications({
+            userIds:        notification.userIds,
             type:           notification.type,
             message:        notification.message,
             relatedPaperId: relatedPaperInternalId,
-          })) });
+          });
 
           this.logger.debug(`Notifications sent: ${notification.type} to ${notification.userIds.length} users`);
         } catch (error) {
