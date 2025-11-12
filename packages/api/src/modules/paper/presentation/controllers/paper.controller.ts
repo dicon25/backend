@@ -410,6 +410,22 @@ export class PaperController {
       }
     }
 
+    // Get PDF URL from S3 if pdfId exists
+    let pdfUrl: string | undefined;
+
+    if (paper.pdfId) {
+      try {
+        const asset = await this.assetFacade.getAssetDetail(paper.pdfId);
+
+        pdfUrl = asset.url;
+      } catch {
+        // Asset not found, fallback to paper.pdfUrl
+        pdfUrl = paper.pdfUrl;
+      }
+    } else {
+      pdfUrl = paper.pdfUrl;
+    }
+
     // Set myReaction for anonymous users
     const myReaction = paper.myReaction ?? {
       isLiked:   false,
@@ -427,7 +443,7 @@ export class PaperController {
       content:           paper.content,
       doi:               paper.doi,
       url:               paper.url,
-      pdfUrl:            paper.pdfUrl,
+      pdfUrl,
       issuedAt:          paper.issuedAt,
       likeCount:         paper.likeCount,
       unlikeCount:       paper.unlikeCount,
