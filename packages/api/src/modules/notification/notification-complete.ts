@@ -411,5 +411,7 @@ const queryHandlers = [ListNotificationsHandler, CountUnreadHandler];
 export class NotificationModule {
 }
 
-export { NotificationService } from './application/services/notification.service';
+export {
+  NotificationService,
+} from './application/services/notification.service';
 
