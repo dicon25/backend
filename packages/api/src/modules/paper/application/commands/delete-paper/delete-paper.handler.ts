@@ -11,7 +11,7 @@ export class DeletePaperHandler implements ICommandHandler<DeletePaperCommand> {
   }
 
   async execute(command: DeletePaperCommand): Promise<void> {
-    const paper = await this.paperRepository.findByPaperId(command.paperId);
+    const paper = await this.paperRepository.findById(command.paperId);
 
     if (!paper) {
       throw new NotFoundException('Paper not found');

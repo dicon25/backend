@@ -15,7 +15,7 @@ export class RecordPaperViewHandler implements ICommandHandler<RecordPaperViewCo
 
   async execute(command: RecordPaperViewCommand): Promise<RecordPaperViewResult> {
     // Check if paper exists
-    const paper = await this.prisma.paper.findUnique({ where: { paperId: command.paperId } });
+    const paper = await this.prisma.paper.findUnique({ where: { id: command.paperId } });
 
     if (!paper) {
       throw new NotFoundException('Paper not found');

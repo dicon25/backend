@@ -14,13 +14,13 @@ export class ToggleReactionHandler implements ICommandHandler<ToggleReactionComm
   async execute(command: ToggleReactionCommand): Promise<{
     action: 'created' | 'deleted';
   }> {
-    // Find paper by paperId field (not PK)
+    // Find paper by id (PK)
     const paper = await this.prisma.paper.findUnique({
-      where: { paperId: command.paperId },
+      where: { id: command.paperId },
     });
 
     if (!paper) {
-      throw new NotFoundException(`Paper not found with paperId: ${command.paperId}`);
+      throw new NotFoundException(`Paper not found with id: ${command.paperId}`);
     }
 
     const paperPkId = paper.id;

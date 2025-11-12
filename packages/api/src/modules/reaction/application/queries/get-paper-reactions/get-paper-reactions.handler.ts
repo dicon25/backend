@@ -11,13 +11,13 @@ export class GetPaperReactionsHandler implements IQueryHandler<GetPaperReactions
   }
 
   async execute(query: GetPaperReactionsQuery): Promise<ReactionStats> {
-    // Find paper by paperId field (not PK)
+    // Find paper by id (PK)
     const paper = await this.prisma.paper.findUnique({
-      where: { paperId: query.paperId },
+      where: { id: query.paperId },
     });
 
     if (!paper) {
-      throw new NotFoundException(`Paper not found with paperId: ${query.paperId}`);
+      throw new NotFoundException(`Paper not found with id: ${query.paperId}`);
     }
 
     return await this.reactionRepository.getPaperStats(paper.id);

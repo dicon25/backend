@@ -76,7 +76,7 @@ export class PaperRelationController {
   @Public()
   @UseGuards(CrawlerAuthGuard)
   async createRelation(@Param('paperId') paperId: string, @Body() dto: CreateRelationDto) {
-    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
 
     if (!paper) {
       throw new Error('Paper not found');
@@ -97,7 +97,7 @@ export class PaperRelationController {
     description: '특정 논문과 관련된 모든 논문 목록을 조회합니다. 모든 관계 유형(SIMILAR, OPPOSING, EXTENSION, CITATION, RELATED_TOPIC)을 포함하며, 유사도 점수 기준으로 내림차순 정렬됩니다. limit 파라미터로 반환할 항목 수를 제한할 수 있습니다(기본값: 20).',
   })
   async getRelatedPapers(@Param('paperId') paperId: string, @Query() query: ListRelatedDto) {
-    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
 
     if (!paper) {
       throw new Error('Paper not found');
@@ -119,7 +119,7 @@ export class PaperRelationController {
     description: '특정 논문과 유사한 논문 목록을 조회합니다. 관계 유형이 SIMILAR인 논문만 반환하며, 유사도 점수 기준으로 내림차순 정렬됩니다. limit 파라미터로 반환할 항목 수를 제한할 수 있습니다(기본값: 20).',
   })
   async getSimilarPapers(@Param('paperId') paperId: string, @Query() query: ListRelatedDto) {
-    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
 
     if (!paper) {
       throw new Error('Paper not found');
@@ -144,7 +144,7 @@ export class PaperRelationController {
     description: '특정 논문과 반대되는 논문 목록을 조회합니다. 관계 유형이 OPPOSING인 논문만 반환하며, 생성일 기준으로 내림차순 정렬됩니다. limit 파라미터로 반환할 항목 수를 제한할 수 있습니다(기본값: 20).',
   })
   async getOpposingPapers(@Param('paperId') paperId: string, @Query() query: ListRelatedDto) {
-    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
 
     if (!paper) {
       throw new Error('Paper not found');

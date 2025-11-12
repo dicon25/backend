@@ -19,7 +19,7 @@ export class GetPaperDetailHandler implements IQueryHandler<GetPaperDetailQuery>
   }
 
   async execute(query: GetPaperDetailQuery): Promise<PaperDetailResult> {
-    const paper = await this.paperRepository.findByPaperId(query.paperId);
+    const paper = await this.paperRepository.findById(query.paperId);
 
     if (!paper) {
       throw new NotFoundException('Paper not found');
