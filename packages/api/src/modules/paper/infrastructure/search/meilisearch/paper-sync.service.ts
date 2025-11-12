@@ -7,10 +7,8 @@ import { PaperIndexService } from './paper-index.service';
 export class PaperSyncService {
   private readonly logger = new Logger(PaperSyncService.name);
 
-  constructor(
-    private readonly meiliSearchService: MeiliSearchService,
-    private readonly paperIndexService: PaperIndexService,
-  ) {
+  constructor(private readonly meiliSearchService: MeiliSearchService,
+    private readonly paperIndexService: PaperIndexService) {
   }
 
   async indexPaper(paper: PaperEntity): Promise<void> {
@@ -70,23 +68,30 @@ export class PaperSyncService {
 
     try {
       const indexName = this.meiliSearchService.getIndexName();
-      const index = client.index(indexName);
-
-      const updateDoc: Record<string, unknown> = {
-        id: paperId,
-      };
+      const index = client.index(indexName);      const updateDoc: Record<string, unknown> = { id: paperId };
 
       if (paper.paperId !== undefined) updateDoc.paperId = paper.paperId;
+
       if (paper.title !== undefined) updateDoc.title = paper.title;
+
       if (paper.summary !== undefined) updateDoc.summary = paper.summary;
+
       if (paper.translatedSummary !== undefined) updateDoc.translatedSummary = paper.translatedSummary;
+
       if (paper.authors !== undefined) updateDoc.authors = paper.authors;
+
       if (paper.categories !== undefined) updateDoc.categories = paper.categories;
+
       if (paper.hashtags !== undefined) updateDoc.hashtags = paper.hashtags;
+
       if (paper.translatedHashtags !== undefined) updateDoc.translatedHashtags = paper.translatedHashtags;
+
       if (paper.doi !== undefined) updateDoc.doi = paper.doi;
+
       if (paper.issuedAt !== undefined) updateDoc.issuedAt = paper.issuedAt ? paper.issuedAt.toISOString() : null;
+
       if (paper.likeCount !== undefined) updateDoc.likeCount = paper.likeCount;
+
       if (paper.totalViewCount !== undefined) updateDoc.totalViewCount = paper.totalViewCount;
 
       await index.updateDocuments([updateDoc]);

@@ -152,21 +152,6 @@ export class PaperRepository implements PaperRepositoryPort {
       where: { id },
       data:  { totalViewCount: { increment: 1 } },
     });
-
-    // Update view count in MeiliSearch
-    if (this.paperSyncService) {
-      try {
-        const paper = await this.findById(id);
-
-        if (paper) {
-          await this.paperSyncService.updatePaper(id, { totalViewCount: paper.totalViewCount });
-        }
-      } catch (error) {
-        this.logger.warn(`Failed to update view count in MeiliSearch: ${id}`, error);
-
-        // Don't throw - allow the operation to continue even if indexing fails
-      }
-    }
   }
 
   async getCategories(): Promise<CategoryWithCount[]> {

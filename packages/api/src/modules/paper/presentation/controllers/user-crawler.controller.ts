@@ -1,12 +1,30 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiOperation,
+  ApiProperty,
   ApiResponse,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { NotificationType } from '@scholub/database';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { CrawlerAuthGuard } from '@/common/guards';
+import { ApiResponseType } from '@/common/lib/swagger/decorators';
 import { PrismaService } from '@/common/modules/prisma';
+import { NotificationService } from '@/modules/notification/application/services/notification.service';
 import { Public } from '@/modules/user/presentation/decorators';
 
 export class UserActivityDto {
@@ -15,13 +33,108 @@ export class UserActivityDto {
   interestedPaperIds: string[];
 }
 
+export class CreateNotificationDto {
+  @ApiProperty({
+    description: 'Notification type',
+    enum:        [
+      'RECOMMENDED_PAPER', 'SIMILAR_PAPER', 'OPPOSING_PAPER', 'DISCUSSION_ACTIVITY', 'SYSTEM',
+    ],
+  })
+  @IsEnum([
+    'RECOMMENDED_PAPER', 'SIMILAR_PAPER', 'OPPOSING_PAPER', 'DISCUSSION_ACTIVITY', 'SYSTEM',
+  ])
+  @IsNotEmpty()
+  type: NotificationType;
+
+  @ApiProperty({ description: 'Notification message' })
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+
+  @ApiProperty({
+    description: 'Related paper ID', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  relatedPaperId?: string;
+
+  @ApiProperty({
+    description: 'Related discussion ID', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  relatedDiscussionId?: string;
+
+  @ApiProperty({
+    description: 'Related user ID', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  relatedUserId?: string;
+}
+
+export class CreateBulkNotificationDto {
+  @ApiProperty({
+    description: 'User IDs to send notification to',
+    type:        [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty()
+  userIds: string[];
+
+  @ApiProperty({
+    description: 'Notification type',
+    enum:        [
+      'RECOMMENDED_PAPER', 'SIMILAR_PAPER', 'OPPOSING_PAPER', 'DISCUSSION_ACTIVITY', 'SYSTEM',
+    ],
+  })
+  @IsEnum([
+    'RECOMMENDED_PAPER', 'SIMILAR_PAPER', 'OPPOSING_PAPER', 'DISCUSSION_ACTIVITY', 'SYSTEM',
+  ])
+  @IsNotEmpty()
+  type: NotificationType;
+
+  @ApiProperty({ description: 'Notification message' })
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+
+  @ApiProperty({
+    description: 'Related paper ID', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  relatedPaperId?: string;
+
+  @ApiProperty({
+    description: 'Related discussion ID', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  relatedDiscussionId?: string;
+
+  @ApiProperty({
+    description: 'Related user ID', required: false,
+  })
+  @IsOptional()
+  @IsString()
+  relatedUserId?: string;
+}
+
+export class MessageResponseDto {
+  @ApiProperty({ description: 'Response message' })
+  message: string;
+}
+
 @ApiTags('Crawler - Users')
 @ApiSecurity('bearer')
 @Controller('crawler/users')
 @Public()
 @UseGuards(CrawlerAuthGuard)
 export class UserCrawlerController {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService) {
   }
 
   @Get('activities')
@@ -95,6 +208,45 @@ export class UserCrawlerController {
         };
       })
       .filter(item => item.interestedHashtags.length > 0 || item.interestedPaperIds.length > 0);
+  }
+
+  @Post(':userId/notifications')
+  @ApiOperation({
+    summary:     'Send notification to a user (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 특정 사용자에게 알림을 전송합니다. 알림 타입, 메시지, 관련 논문/토론/사용자 ID를 지정할 수 있습니다. 크롤러 인증이 필요합니다.',
+  })
+  @ApiResponseType({ type: MessageResponseDto })
+  async sendNotification(@Param('userId') userId: string,
+    @Body() dto: CreateNotificationDto): Promise<MessageResponseDto> {
+    await this.notificationService.createNotification({
+      userId:              userId,
+      type:                dto.type,
+      message:             dto.message,
+      relatedPaperId:      dto.relatedPaperId,
+      relatedDiscussionId: dto.relatedDiscussionId,
+      relatedUserId:       dto.relatedUserId,
+    });
+
+    return { message: 'Notification sent successfully' };
+  }
+
+  @Post('notifications/bulk')
+  @ApiOperation({
+    summary:     'Send notifications to multiple users (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 여러 사용자에게 동일한 알림을 일괄 전송합니다. 사용자 ID 목록, 알림 타입, 메시지, 관련 논문/토론/사용자 ID를 지정할 수 있습니다. 크롤러 인증이 필요합니다.',
+  })
+  @ApiResponseType({ type: MessageResponseDto })
+  async sendBulkNotifications(@Body() dto: CreateBulkNotificationDto): Promise<MessageResponseDto> {
+    await this.notificationService.createBulkNotifications({
+      userIds:             dto.userIds,
+      type:                dto.type,
+      message:             dto.message,
+      relatedPaperId:      dto.relatedPaperId,
+      relatedDiscussionId: dto.relatedDiscussionId,
+      relatedUserId:       dto.relatedUserId,
+    });
+
+    return { message: `Notifications sent successfully to ${dto.userIds.length} users` };
   }
 }
 
