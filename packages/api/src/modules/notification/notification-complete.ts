@@ -37,15 +37,16 @@ import { UserModule } from '../user/user.module';
 import { NotificationService } from './application/services/notification.service';
 
 export class NotificationEntity {
-  id:              string;
-  userId:          string;
-  type:            string;
-  message:         string;
-  relatedPaperId?: string;
-  relatedUserId?:  string;
-  isRead:          boolean;
-  readAt?:         Date;
-  createdAt:       Date;
+  id:                   string;
+  userId:               string;
+  type:                 string;
+  message:              string;
+  relatedPaperId?:      string;
+  relatedDiscussionId?: string;
+  relatedUserId?:       string;
+  isRead:               boolean;
+  readAt?:              Date;
+  createdAt:            Date;
 
   constructor(data: NotificationEntity) {
     Object.assign(this, data);
@@ -167,15 +168,16 @@ export class ListNotificationsHandler implements IQueryHandler<ListNotifications
       }
 
       return {
-        id:             n.id,
-        userId:         n.userId,
-        type:           n.type,
-        message:        n.message,
-        relatedPaperId: n.relatedPaperId ?? undefined,
-        relatedUserId:  n.relatedUserId ?? undefined,
-        isRead:         n.isRead,
-        readAt:         n.readAt ?? undefined,
-        createdAt:      n.createdAt,
+        id:                  n.id,
+        userId:              n.userId,
+        type:                n.type,
+        message:             n.message,
+        relatedPaperId:      n.relatedPaperId ?? undefined,
+        relatedDiscussionId: n.relatedDiscussionId ?? undefined,
+        relatedUserId:       n.relatedUserId ?? undefined,
+        isRead:              n.isRead,
+        readAt:              n.readAt ?? undefined,
+        createdAt:           n.createdAt,
         paperThumbnailUrl,
         userProfileImageUrl,
       };
@@ -276,6 +278,11 @@ export class NotificationDto {
     description: 'Related paper ID', required: false,
   })
   relatedPaperId?: string;
+
+  @ApiProperty({
+    description: 'Related discussion ID', required: false,
+  })
+  relatedDiscussionId?: string;
 
   @ApiProperty({
     description: 'Related user ID', required: false,
