@@ -28,9 +28,9 @@ import { NotificationService } from '@/modules/notification/application/services
 import { Public } from '@/modules/user/presentation/decorators';
 
 export class UserActivityDto {
-  userId:             string;
-  interestedHashtags: string[];
-  interestedPaperIds: string[];
+  userId:              string;
+  interestedHashtags:  string[];
+  interestedPaperUrls: string[];
 }
 
 export class CreateNotificationDto {
@@ -140,7 +140,7 @@ export class UserCrawlerController {
   @Get('activities')
   @ApiOperation({
     summary:     'Get user activities with interested hashtags (crawler only)',
-    description: '크롤러 전용 엔드포인트로, 모든 유저의 액티비티 정보를 조회합니다. 각 유저의 userId, interestedHashtags(사용자의 해시태그 + UserActivity에서 REACT_UNLIKE를 제외한 타입의 논문들의 hashtags 집합), interestedPaperIds(UserActivity에서 REACT_UNLIKE를 제외한 타입의 논문 ID 목록)를 반환합니다.',
+    description: '크롤러 전용 엔드포인트로, 모든 유저의 액티비티 정보를 조회합니다. 각 유저의 userId, interestedHashtags(사용자의 해시태그 + UserActivity에서 REACT_UNLIKE를 제외한 타입의 논문들의 hashtags 집합), interestedPaperUrls(UserActivity에서 REACT_UNLIKE를 제외한 타입의 논문 URL 목록)를 반환합니다.',
   })
   @ApiResponse({
     type:        [UserActivityDto],
@@ -154,19 +154,19 @@ export class UserCrawlerController {
       hashtags: true,
     } });
 
-    // Get all user activities (excluding REACT_UNLIKE) with paper hashtags and translatedHashtags
+    // Get all user activities (excluding REACT_UNLIKE) with paper hashtags, translatedHashtags, and url
     const userActivities = await this.prisma.userActivity.findMany({
       where: {
         type: { not: 'REACT_UNLIKE' }, paperId: { not: null },
       },
       include: { paper: { select: {
-        hashtags: true, translatedHashtags: true,
+        hashtags: true, translatedHashtags: true, url: true,
       } } },
     });
 
-    // Group paper hashtags by user
+    // Group paper hashtags and URLs by user
     const userPaperHashtagsMap = new Map<string, Set<string>>;
-    const userPaperIdsMap = new Map<string, Set<string>>;
+    const userPaperUrlsMap = new Map<string, Set<string>>;
 
     for (const activity of userActivities) {
       if (activity.userId && activity.paper) {
@@ -174,12 +174,14 @@ export class UserCrawlerController {
           userPaperHashtagsMap.set(activity.userId, new Set);
         }
 
-        if (!userPaperIdsMap.has(activity.userId)) {
-          userPaperIdsMap.set(activity.userId, new Set);
+        if (!userPaperUrlsMap.has(activity.userId)) {
+          userPaperUrlsMap.set(activity.userId, new Set);
         }
 
-        // Add paper ID
-        userPaperIdsMap.get(activity.userId)!.add(activity.paperId!);
+        // Add paper URL if it exists
+        if (activity.paper.url) {
+          userPaperUrlsMap.get(activity.userId)!.add(activity.paper.url);
+        }
 
         // Add hashtags
         const hashtags = [
@@ -199,15 +201,15 @@ export class UserCrawlerController {
         const userHashtags = user.hashtags ?? [];
         const activityHashtags = Array.from(userPaperHashtagsMap.get(user.id) ?? []);
         const interestedHashtags = Array.from(new Set([...userHashtags, ...activityHashtags]));
-        const interestedPaperIds = Array.from(userPaperIdsMap.get(user.id) ?? []);
+        const interestedPaperUrls = Array.from(userPaperUrlsMap.get(user.id) ?? []);
 
         return {
           userId: user.id,
           interestedHashtags,
-          interestedPaperIds,
+          interestedPaperUrls,
         };
       })
-      .filter(item => item.interestedHashtags.length > 0 || item.interestedPaperIds.length > 0);
+      .filter(item => item.interestedHashtags.length > 0 || item.interestedPaperUrls.length > 0);
   }
 
   @Post(':userId/notifications')

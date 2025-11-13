@@ -111,8 +111,8 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
           let relatedPaperInternalId: string | undefined;
 
           if ((notification.type === 'OPPOSING_PAPER' || notification.type === 'SIMILAR_PAPER') && notification.relatedPaperId) {
-            // Find related paper by paperId
-            const relatedPaper = await this.prisma.paper.findUnique({ where: { paperId: notification.relatedPaperId } });
+            // Find related paper by url (relatedPaperId contains the paper URL)
+            const relatedPaper = await this.prisma.paper.findFirst({ where: { url: notification.relatedPaperId } });
 
             if (relatedPaper) {
               relatedPaperInternalId = relatedPaper.id;
@@ -136,7 +136,7 @@ export class CreatePaperHandler implements ICommandHandler<CreatePaperCommand> {
 
               this.logger.debug(`PaperRelation created: ${result.id} -> ${relatedPaper.id} (${relationType})`);
             } else {
-              this.logger.warn(`Related paper not found: ${notification.relatedPaperId}`);
+              this.logger.warn(`Related paper not found by URL: ${notification.relatedPaperId}`);
             }
           }
 

@@ -3,14 +3,18 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Logger,
+  NotFoundException,
   Param,
+  Patch,
   Post,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
@@ -25,9 +29,10 @@ import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
 import { AssetFacade } from '@/modules/asset/application/facades';
 import { CreatePaperCommand } from '@/modules/paper/application/commands';
 import { PaperFacade } from '@/modules/paper/application/facades';
+import { PaperRepositoryPort } from '@/modules/paper/domain/repositories';
 import { PaperIndexService, PaperSyncService } from '@/modules/paper/infrastructure/search/meilisearch';
 import { Public } from '@/modules/user/presentation/decorators';
-import { CreatePaperDto, PaperDetailDto } from '../dtos';
+import { CreatePaperDto, PaperDetailDto, UpdateThumbnailDto } from '../dtos';
 
 @ApiTags('Crawler - Papers')
 @ApiSecurity('bearer')
@@ -43,6 +48,7 @@ export class PaperCrawlerController {
     private readonly prisma: PrismaService,
     private readonly paperSyncService: PaperSyncService,
     private readonly paperIndexService: PaperIndexService,
+    private readonly paperRepository: PaperRepositoryPort,
   ) {
   }
 
@@ -226,6 +232,206 @@ export class PaperCrawlerController {
     this.logger.log(`[createPaper] Total time: ${Date.now() - startTime}ms`);
 
     return result;
+  }
+
+  @Get()
+  @ApiOperation({
+    summary:     'Get all papers (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 페이지네이션 없이 모든 논문을 조회합니다. 각 논문의 상세 정보와 PDF URL, 썸네일 URL을 포함합니다. 크롤러 인증이 필요합니다.',
+  })
+  @ApiResponseType({
+    type: PaperDetailDto, isArray: true,
+  })
+  async getAllPapers() {
+    const startTime = Date.now();
+
+    this.logger.log('[getAllPapers] Starting to fetch all papers');
+
+    // Get all papers from database
+    const papers = await this.prisma.paper.findMany({ orderBy: { createdAt: 'desc' } });
+
+    this.logger.log(`[getAllPapers] Found ${papers.length} papers`);
+
+    // Collect all asset IDs (thumbnails and PDFs)
+    const thumbnailIds = papers
+      .map(p => p.thumbnailId)
+      .filter((id): id is string => id !== undefined);
+
+    const pdfIds = papers
+      .map(p => p.pdfId)
+      .filter((id): id is string => id !== undefined);
+
+    // Batch fetch all assets
+    const thumbnailMap = new Map<string, string>;
+    const pdfMap = new Map<string, string>;
+
+    if (thumbnailIds.length > 0) {
+      await Promise.all(thumbnailIds.map(async id => {
+        try {
+          const asset = await this.assetFacade.getAssetDetail(id);
+
+          thumbnailMap.set(id, asset.url);
+        } catch {
+          // Asset not found, skip
+        }
+      }));
+    }
+
+    if (pdfIds.length > 0) {
+      await Promise.all(pdfIds.map(async id => {
+        try {
+          const asset = await this.assetFacade.getAssetDetail(id);
+
+          pdfMap.set(id, asset.url);
+        } catch {
+          // Asset not found, skip
+        }
+      }));
+    }
+
+    // Map papers to DTOs
+    const result = papers.map(paper => {
+      const thumbnailUrl = paper.thumbnailId
+        ? thumbnailMap.get(paper.thumbnailId) ?? undefined
+        : undefined;
+
+      const pdfUrl = paper.pdfId
+        ? pdfMap.get(paper.pdfId) ?? paper.pdfUrl ?? undefined
+        : paper.pdfUrl ?? undefined;
+
+      return {
+        id:                paper.id,
+        paperId:           paper.paperId,
+        title:             paper.title,
+        categories:        paper.categories,
+        authors:           paper.authors,
+        summary:           paper.summary,
+        translatedSummary: paper.translatedSummary ?? undefined,
+        content:           paper.content,
+        doi:               paper.doi,
+        url:               paper.url ?? undefined,
+        pdfUrl,
+        issuedAt:          paper.issuedAt ?? undefined,
+        likeCount:         paper.likeCount,
+        unlikeCount:       paper.unlikeCount,
+        totalViewCount:    paper.totalViewCount,
+        thumbnailUrl,
+        pdfId:             paper.pdfId,
+        createdAt:         paper.createdAt,
+        updatedAt:         paper.updatedAt,
+      };
+    });
+
+    this.logger.log(`[getAllPapers] Total time: ${Date.now() - startTime}ms`);
+
+    return result;
+  }
+
+  @Patch(':paperId/thumbnail')
+  @UseInterceptors(FileInterceptor('thumbnail', getMulterS3Uploader({
+    extensions: [
+      '.jpg', '.jpeg', '.png', '.gif', '.webp',
+    ],
+    maxSize: 10 * 1024 * 1024, // 10MB
+  })))
+  @ApiOperation({
+    summary:     'Update paper thumbnail (crawler only)',
+    description: '크롤러 전용 엔드포인트로, 논문의 썸네일을 변경합니다. 썸네일 파일을 업로드하거나 기존 에셋 ID를 제공할 수 있습니다. 크롤러 인증이 필요합니다.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: {
+    type:       'object',
+    properties: {
+      thumbnailId: {
+        type: 'string', description: 'Optional: existing thumbnail asset ID',
+      },
+      thumbnail: {
+        type:        'string',
+        format:      'binary',
+        description: 'Thumbnail image file (optional if thumbnailId is provided)',
+      },
+    },
+  } })
+  @ApiResponseType({ type: PaperDetailDto })
+  async updateThumbnail(@Param('paperId') paperId: string,
+    @Body() dto: UpdateThumbnailDto,
+    @UploadedFile() thumbnailFile?: Express.Multer.File) {
+    const startTime = Date.now();
+
+    this.logger.log(`[updateThumbnail] Starting - paperId: ${paperId}`);
+
+    // Find paper by id (PK)
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
+
+    if (!paper) {
+      throw new NotFoundException(`Paper with id '${paperId}' not found`);
+    }
+
+    let thumbnailId = dto.thumbnailId;
+
+    const oldThumbnailId = paper.thumbnailId;
+
+    // Validate existing asset ID if provided
+    if (thumbnailId && !thumbnailFile) {
+      const checkStart = Date.now();
+      const existsResult = await this.assetFacade.checkAssetExists(thumbnailId);
+
+      this.logger.log(`[updateThumbnail] Thumbnail asset check completed in ${Date.now() - checkStart}ms`);
+
+      if (!existsResult.exists) {
+        throw new BadRequestException(`Thumbnail asset with id '${thumbnailId}' does not exist`);
+      }
+    }
+
+    // Upload new thumbnail file if provided
+    if (thumbnailFile && !thumbnailId) {
+      const thumbnailUploadStart = Date.now();
+
+      try {
+        const uploadResult = await this.assetFacade.uploadAsset(thumbnailFile, 'thumbnails');
+
+        thumbnailId = uploadResult.id;
+
+        this.logger.log(`[updateThumbnail] Thumbnail upload completed in ${Date.now() - thumbnailUploadStart}ms - size: ${thumbnailFile.size} bytes`);
+      } catch (err: unknown) {
+        const error = err as Error;
+
+        this.logger.error(`[updateThumbnail] Thumbnail upload failed: ${error.message}`, error.stack);
+
+        throw err;
+      }
+    }
+
+    if (!thumbnailId) {
+      throw new BadRequestException('Either thumbnailId or thumbnail file must be provided');
+    }
+
+    // Update paper thumbnail
+    const updateStart = Date.now();
+
+    await this.paperRepository.update(paperId, { thumbnailId });
+
+    this.logger.log(`[updateThumbnail] Paper update completed in ${Date.now() - updateStart}ms`);
+
+    // Delete old thumbnail asset if it exists and is different from the new one
+    if (oldThumbnailId && oldThumbnailId !== thumbnailId) {
+      try {
+        await this.assetFacade.deleteAsset(oldThumbnailId);
+
+        this.logger.log(`[updateThumbnail] Old thumbnail asset deleted: ${oldThumbnailId}`);
+      } catch (error) {
+        this.logger.warn(`[updateThumbnail] Failed to delete old thumbnail asset ${oldThumbnailId}`, error);
+
+        // Don't throw - allow the operation to continue even if deletion fails
+      }
+    }
+
+    this.logger.log(`[updateThumbnail] Total time: ${Date.now() - startTime}ms`);
+
+    // Get updated paper detail
+    const paperDetail = await this.paperFacade.getPaperDetail(paperId);
+
+    return paperDetail;
   }
 
   @Delete(':paperId')
