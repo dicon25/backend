@@ -20,6 +20,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
 import { PrismaService } from '@/common/modules/prisma';
@@ -28,6 +29,17 @@ import { getMulterS3Uploader } from '@/common/modules/s3/s3.config';
 import { UpdateProfileDto } from '../dtos/request/update-profile.dto';
 import { PublicUserProfileDto } from '../dtos/response/public-user-profile.dto';
 import { UserDetailResponseDto } from '../dtos/response/user-detail.dto';
+
+export class UserActivityResponseDto {
+  @ApiProperty({ description: 'User ID' })
+  userId: string;
+
+  @ApiProperty({ description: 'Interested hashtags', type: [String] })
+  interestedHashtags: string[];
+
+  @ApiProperty({ description: 'Interested paper URLs', type: [String] })
+  interestedPaperUrls: string[];
+}
 
 @ApiTags('User')
 @Controller('users')
@@ -110,6 +122,74 @@ export class UserController {
     const detailResult = await this.queryBus.execute<UserDetailQuery, UserDetailResult>(query);
 
     return UserDetailResponseDto.from(detailResult);
+  }
+
+  @Get('me/activities')
+  @ApiOperation({
+    summary:     'Get my user activities',
+    description: '현재 로그인한 사용자의 활동 정보를 조회합니다. 사용자의 해시태그와 UserActivity에서 REACT_UNLIKE를 제외한 타입의 논문들의 hashtags 집합, 그리고 관심 논문 URL 목록을 반환합니다.',
+  })
+  @ApiResponseType({
+    type:        UserActivityResponseDto,
+    description: 'User activity information',
+    errors:      [
+      400, 401, 500,
+    ],
+  })
+  async getMyActivities(@CurrentUser() user: UserEntity): Promise<UserActivityResponseDto> {
+    // Get user with hashtags
+    const userWithHashtags = await this.prisma.user.findUnique({
+      where:  { id: user.id },
+      select: { id: true, hashtags: true },
+    });
+
+    if (!userWithHashtags) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get user activities (excluding REACT_UNLIKE) with paper hashtags, translatedHashtags, and url
+    const userActivities = await this.prisma.userActivity.findMany({
+      where: {
+        userId: user.id,
+        type:   { not: 'REACT_UNLIKE' },
+        paperId: { not: null },
+      },
+      include: { paper: { select: {
+        hashtags: true, translatedHashtags: true, url: true,
+      } } },
+    });
+
+    // Collect paper hashtags and URLs
+    const interestedHashtagsSet = new Set<string>();
+    const interestedPaperUrlsSet = new Set<string>();
+
+    // Add user's own hashtags
+    const userHashtags = userWithHashtags.hashtags ?? [];
+    userHashtags.forEach(hashtag => interestedHashtagsSet.add(hashtag));
+
+    // Add hashtags and URLs from activities
+    for (const activity of userActivities) {
+      if (activity.paper) {
+        // Add paper URL if it exists
+        if (activity.paper.url) {
+          interestedPaperUrlsSet.add(activity.paper.url);
+        }
+
+        // Add hashtags
+        const hashtags = [
+          ...activity.paper.hashtags ?? [],
+          ...activity.paper.translatedHashtags ?? [],
+        ];
+
+        hashtags.forEach(hashtag => interestedHashtagsSet.add(hashtag));
+      }
+    }
+
+    return {
+      userId:              user.id,
+      interestedHashtags:  Array.from(interestedHashtagsSet),
+      interestedPaperUrls: Array.from(interestedPaperUrlsSet),
+    };
   }
 
   @Get(':userId/profile')
