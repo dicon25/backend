@@ -1,55 +1,15 @@
-# Dependencies
 node_modules
-.pnpm-store
-
-# Build outputs
+**/node_modules
+packages/*/node_modules
 dist
-build
-*.tsbuildinfo
-
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Git
+**/dist
 .git
 .gitignore
-.gitattributes
-
-# IDE
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+coverage
 .vscode
 .idea
-*.swp
-*.swo
-*~
-
-# Testing
-coverage
-.nyc_output
-test-results
-
-# Documentation
-*.md
-!README.md
-docs
-
-# CI/CD
-.github
-.gitlab-ci.yml
-
-# Docker
-Dockerfile*
-.dockerignore
-docker-compose*.yml
-
-# Misc
-.DS_Store
-.eslintcache
-.prettierignore

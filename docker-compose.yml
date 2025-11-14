@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.development
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    container_name: scholub-api
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+    restart: unless-stopped
+    networks:
+      - scholub-network
+
+networks:
+  scholub-network:
+    driver: bridge
