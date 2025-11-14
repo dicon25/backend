@@ -177,7 +177,7 @@ export class PaperController {
     user?: User;
   }, @Query('limit') limit?: number) {
     // Find paper by paperId
-    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
 
     if (!paper) {
       throw new NotFoundException('Paper not found');
