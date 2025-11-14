@@ -11,6 +11,9 @@ export class PaperListItemDto {
   @ApiProperty({ type: [String] })
   categories: string[];
 
+  @ApiProperty({ type: [String] })
+  authors: string[];
+
   @ApiProperty()
   title: string;
 

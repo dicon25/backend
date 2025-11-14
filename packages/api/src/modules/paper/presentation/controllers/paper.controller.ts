@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -16,6 +17,7 @@ import { AssetFacade } from '@/modules/asset/application/facades';
 import { PaperFacade } from '@/modules/paper/application/facades';
 import { PaperEntity } from '@/modules/paper/domain/entities';
 import { PaperSortBy, SortOrder } from '@/modules/paper/domain/enums';
+import { PaperMapper } from '@/modules/paper/infrastructure/persistence/mappers';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
 import { Public } from '@/modules/user/presentation/decorators';
 import {
@@ -161,6 +163,45 @@ export class PaperController {
     return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
 
+  @Get(':paperId/similar')
+  @ApiOperation({
+    summary:     'Get similar papers',
+    description: '특정 논문과 유사한(SIMILAR) 논문 목록을 조회합니다. 최신순으로 정렬되며, limit 파라미터로 반환할 항목 수를 제한할 수 있습니다(기본값: 20개).',
+  })
+  @ApiResponseType({
+    type:    PaperListItemDto,
+    isArray: true,
+  })
+  @Public()
+  async getSimilarPapers(@Param('paperId') paperId: string, @Req() req: Request & {
+    user?: User;
+  }, @Query('limit') limit?: number) {
+    // Find paper by paperId
+    const paper = await this.prisma.paper.findUnique({ where: { paperId } });
+
+    if (!paper) {
+      throw new NotFoundException('Paper not found');
+    }
+
+    // Get similar paper relations
+    const relations = await this.prisma.paperRelation.findMany({
+      where: {
+        sourcePaperId: paper.id,
+        type:          'SIMILAR',
+      },
+      take:    limit ?? 20,
+      include: { relatedPaper: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Map related papers to entities
+    const relatedPapers = relations
+      .map(rel => rel.relatedPaper)
+      .map(paper => PaperMapper.toDomain(paper));
+
+    return await this.mapPapersToListItemDto(relatedPapers, req.user?.id);
+  }
+
   private async mapPapersToDto(papers: PaperEntity[]): Promise<PaperDetailDto[]> {
     // Collect all thumbnail IDs
     const thumbnailIds = papers
@@ -298,6 +339,7 @@ export class PaperController {
         id:                paper.id,
         paperId:           paper.paperId,
         categories:        paper.categories,
+        authors:           paper.authors,
         title:             paper.title,
         summary:           paper.summary,
         translatedSummary: paper.translatedSummary,
