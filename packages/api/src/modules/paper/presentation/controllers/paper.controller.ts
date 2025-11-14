@@ -453,7 +453,7 @@ export class PaperController {
     }
 
     // Set pdfUrl to paper.url (arxivUrl)
-    const pdfUrl = paper.url;
+    const pdfUrl = paper.url?.replace('abs', 'pdf');
 
     // Set myReaction for anonymous users
     const myReaction = paper.myReaction ?? {
