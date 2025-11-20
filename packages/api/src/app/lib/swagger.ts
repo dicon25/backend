@@ -45,6 +45,14 @@ export function applySwagger(app: INestApplication): void {
       in:           'header',
     },
     'bearer')
+    .addBearerAuth({
+      type:        'http',
+      scheme:      'bearer',
+      description: 'Enter your Crawler Secret Key (CRAWLER_SECRET_KEY)',
+      name:        'Authorization',
+      in:          'header',
+    },
+    'CrawlerAuth')
     .addSecurityRequirements('bearer')
     .build();
 

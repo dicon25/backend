@@ -29,12 +29,16 @@ import { IsNumber, IsOptional, Min } from 'class-validator';
 import { Request } from 'express';
 import { ApiResponseType } from '@/common/lib/swagger/decorators';
 import { PrismaModule, PrismaService } from '@/common/modules/prisma';
+import { EmailModule } from '@/common/modules/email';
+import { S3Module } from '@/common/modules/s3';
+import { ConfigModule } from '@nestjs/config';
 import { JwtAuthGuard } from '@/modules/user/infrastructure/guards';
 import { AssetModule } from '../asset';
 import { AssetFacade } from '../asset/application/facades';
 import { UserEntity } from '../user/domain';
 import { UserModule } from '../user/user.module';
 import { NotificationService } from './application/services/notification.service';
+import { NotificationCrawlerController } from './presentation/controllers/notification-crawler.controller';
 
 export class NotificationEntity {
   id:                   string;
@@ -407,12 +411,12 @@ const queryHandlers = [ListNotificationsHandler, CountUnreadHandler];
 
 @Module({
   imports: [
-    CqrsModule, PrismaModule, UserModule, AssetModule,
+    CqrsModule, PrismaModule, UserModule, AssetModule, EmailModule, S3Module, ConfigModule,
   ],
   providers: [
     ...commandHandlers, ...queryHandlers, NotificationFacade, NotificationService,
   ],
-  controllers: [NotificationController],
+  controllers: [NotificationController, NotificationCrawlerController],
   exports:     [NotificationFacade, NotificationService],
 })
 export class NotificationModule {

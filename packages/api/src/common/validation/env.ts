@@ -64,4 +64,10 @@ export const envValidationSchema = Joi.object({
   MEILISEARCH_HOST:         requiredWhen('MEILISEARCH_ENABLED', Joi.string().uri()),
   MEILISEARCH_API_KEY:      Joi.string().optional(),
   MEILISEARCH_INDEX_PAPERS: Joi.string().default('papers'),
+
+  // Resend Email
+  RESEND_API_KEY:    Joi.string().optional(),
+  RESEND_FROM_EMAIL: Joi.string().email()
+    .default('onboarding@resend.dev'),
+  RESEND_FROM_NAME: Joi.string().default('Scholub'),
 });
