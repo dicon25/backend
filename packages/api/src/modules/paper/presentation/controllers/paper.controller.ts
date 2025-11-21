@@ -112,7 +112,7 @@ export class PaperController {
   @Get('headlines')
   @ApiOperation({
     summary:     'Get headline papers',
-    description: '헤드라인 논문 목록을 조회합니다. 최근 7일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 4개입니다.',
+    description: '헤드라인 논문 목록을 조회합니다. 최근 7일 내에 추가된 논문 중 인기도 점수((좋아요 수 * 2) + 조회수)가 높은 논문을 반환합니다. 기본값은 4개입니다. 결과가 비어있으면 최신 논문 3개를 반환합니다.',
   })
   @ApiResponseType({
     type:    PaperListItemDto,
@@ -122,7 +122,12 @@ export class PaperController {
   async getHeadlinePapers(@Req() req: Request & {
     user?: User;
   }, @Query('limit') limit?: number) {
-    const papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
+    let papers = await this.paperFacade.getHeadlinePapers(limit ?? 4);
+
+    // 빈 배열이면 최신 논문 3개 반환
+    if (papers.length === 0) {
+      papers = await this.paperFacade.getLatestPapers(3);
+    }
 
     return await this.mapPapersToListItemDto(papers, req.user?.id);
   }
